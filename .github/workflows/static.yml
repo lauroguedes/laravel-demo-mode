@@ -1,0 +1,37 @@
+name: static analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+
+    name: types, style and type coverage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: xdebug
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction
+
+      - name: Check code style
+        run: vendor/bin/pint --test
+
+      - name: Check refactorings
+        run: vendor/bin/rector --dry-run
+
+      - name: Analyse types
+        run: vendor/bin/phpstan analyse --error-format=github
+
+      - name: Check type coverage
+        run: vendor/bin/pest --type-coverage --min=100

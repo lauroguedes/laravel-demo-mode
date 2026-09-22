@@ -1,22 +1,10 @@
-includes:
-    - vendor/larastan/larastan/extension.neon
-
 parameters:
     level: 8
 
     paths:
         - src
-        - config
-        - tests
-        - workbench
 
     tmpDir: build/phpstan
 
     checkOctaneCompatibility: true
     checkModelProperties: true
-
-    ignoreErrors:
-        # Blade component views are resolved by name, not by class reference.
-        -
-            identifier: missingType.iterableValue
-            path: config/demo.php

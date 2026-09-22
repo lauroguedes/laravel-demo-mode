@@ -248,26 +248,28 @@ guard has a reason and the reason is the documentation.
 
 ---
 
-## 5. Milestones
+## 5. Phases
 
-Revised from the spec's eleven to eight, with 0.1+0.2 merged per §2.1. Each is a usable
-release.
+Revised again during the build. The specification's eleven milestones and this
+document's first revision to eight both split the reset story across several
+releases, which turned out to be wrong for a different reason than §2.1's: the
+Runner has to know about cleaners and credential rotation to sequence them
+correctly, so building it in three passes would have meant rewriting its core
+method three times. They are one phase.
 
-| # | Milestone | Content | Done when |
+| # | Phase | Content | Done when |
 |---|---|---|---|
-| **0.1** | Core + guarded reset | M1, all six reset guards, lock, maintenance, `AllowDestructiveCommands`, `MigrateFreshSeed`, M8 scheduling, `demo:install`, `demo:status`, `demo:doctor` | No combination of flags, envs and `--force` reaches a destructive call in the guard matrix test. A Testbench app resets on a cycle. |
-| **0.2** | Credentials + restrictions | M4, M5 complete, `PinnedConfigRepository`, `demo:credentials` | `laravel-sso` migrated to the package and running in public. |
-| **0.3** | Cleaners + UI | M3, M7, `ShareDemoState`, en + pt_BR | `mary-ui-starter-kit` migrated and running. Banner countdown derives from the cron and cannot disagree with it. |
-| **0.4** | Strategies | `Snapshot`, `SqlDump`, `Callback`, `demo:snapshot` | Database CI matrix green on MySQL 8 and PostgreSQL 16. |
-| **0.5** | Write guards | M6 all three layers, `PreventsDemoWrites`, `WriteBlocked` | The admin account of both demos cannot have its email or password changed by a visitor. |
-| **0.6** | On-demand reset | M9 with §3.3 hardening | Route throttled, cooled down, CSRF-enforced, host-checked, queued by default. |
-| **0.7** | Sandbox | M10 `shared` + `scoped`, `demo:sandbox:prune` | Two visitors provably cannot see each other's rows, and a forged session id mints a new sandbox rather than selecting someone else's. |
-| **0.8** | Docs + polish | `/docs` complete, `security.md`, `UPGRADE.md`, recipes | Quickstart executed start to finish by someone who did not write the package. |
-| **1.0** | Release | Tag, announce | Running in public on both projects for ≥ 30 days with no reset incident. |
+| **0** | Scaffold | composer.json, Pint, Rector, PHPStan, Pest, CI, repo metadata | `composer test` runs on an empty `src/`. |
+| **1** | Core + guarded reset | `DemoMode`, `Configuration`, facade, provider, all six barriers, `Runner`, `MigrateFreshSeed`, cleaners, credentials, restrictions, scheduling, `install`/`status`/`doctor`/`reset`/`credentials` | The guard matrix proves no combination of flags reaches a destructive call. A real `demo:reset` rebuilds a real database. |
+| **2** | UI | `<x-demo-banner />`, `<x-demo-credentials />`, `@demo`/`@notdemo`, `ShareDemoState`, en + pt_BR | A countdown derived from the cron, which cannot disagree with the scheduler. |
+| **3** | Strategies | `Snapshot`, `SqlDump`, `Callback`, `demo:snapshot` | Database CI matrix green on MySQL 8 and PostgreSQL 16. |
+| **4** | Write guards | `ReadOnlyMiddleware`, `ModelGuard`, `ConnectionGuard`, `PreventsDemoWrites`, `WriteBlocked` | The published account cannot have its email or password changed by a visitor. |
+| **5** | On-demand reset | `POST /demo/reset` with the §3.3 hardening | Throttled, cooled down, CSRF-enforced, host-checked at request time, queued by default. |
+| **6** | Sandbox | `shared` + `scoped`, `BelongsToSandbox`, `AttachSandbox`, `demo:sandbox:prune` | Two visitors cannot see each other's rows, and a forged session id mints a new sandbox rather than selecting someone else's. |
+| **7** | Docs + polish | `/docs` complete, `UPGRADE.md`, recipes | Quickstart runs start to finish. |
+| **8** | 1.0 | Tag | Both starter kits migrated and running on the release. |
 
 `database` sandbox driver and licence-check integration stay out of 1.0.
-
----
 
 ## 6. Testing
 

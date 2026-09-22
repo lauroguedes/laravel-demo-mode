@@ -62,7 +62,7 @@
             "@php vendor/bin/pint --parallel --test",
             "@php vendor/bin/rector --dry-run"
         ],
-        "test:types": "@php vendor/bin/phpstan analyse",
+        "test:types": "@php vendor/bin/phpstan analyse --memory-limit=1G",
         "test:type-coverage": "@php vendor/bin/pest --type-coverage --min=100",
         "test:unit": "@php vendor/bin/pest",
         "test:coverage": "@php vendor/bin/pest --coverage",

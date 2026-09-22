@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use LauroGuedes\DemoMode\Facades\Demo;
+
+/**
+ * The data a visitor lands in.
+ *
+ * Runs on every reset, against an empty database. Two things are worth deciding
+ * before writing it:
+ *
+ * What a stranger should see. A demo with three rows demonstrates nothing; a demo
+ * with a thousand takes long enough to rebuild that visitors notice the
+ * maintenance page. Seed the amount that makes the product look like itself.
+ *
+ * What a stranger should not see. Everything here is public — names, addresses,
+ * message bodies, uploaded files. Faker output is fine. A dump of real data with
+ * the emails changed is not, and it is the most common way a demo leaks something.
+ *
+ * The published password comes from Demo::credentials(), which the reset rotates
+ * just after this runs. Reading it here rather than hardcoding one is what keeps
+ * the login page and the database in agreement.
+ */
+class DemoSeeder extends Seeder
+{
+    public function run(): void
+    {
+        // \App\Models\User::factory()->create([
+        //     'email' => config('demo.credentials.accounts.0.email'),
+        //     'name' => 'Demo Administrator',
+        // ]);
+    }
+}

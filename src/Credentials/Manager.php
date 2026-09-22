@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LauroGuedes\DemoMode\Credentials;
 
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -46,9 +47,17 @@ final class Manager
      */
     private ?array $loaded = null;
 
+    /**
+     * The store is resolved on use rather than injected.
+     *
+     * Building it means StoreFactory, which means the filesystem manager and the
+     * cache manager. A login page on an installation that is not a demo
+     * constructs this manager to render a component that renders nothing, and
+     * that should cost nothing.
+     */
     public function __construct(
         private readonly Configuration $config,
-        private readonly CredentialStore $store,
+        private readonly Container $container,
         private readonly Dispatcher $events,
     ) {}
 
@@ -118,7 +127,7 @@ final class Manager
             return;
         }
 
-        $this->store->put($this->staged);
+        $this->store()->put($this->staged);
 
         $this->loaded = null;
 
@@ -146,7 +155,7 @@ final class Manager
          * seeder read the password that is about to be published rather than
          * the one the previous reset left in the store.
          */
-        return $this->staged ?? $this->loaded ??= $this->store->get();
+        return $this->staged ?? $this->loaded ??= $this->store()->get();
     }
 
     /**
@@ -179,12 +188,12 @@ final class Manager
     {
         $this->staged = null;
         $this->loaded = null;
-        $this->store->forget();
+        $this->store()->forget();
     }
 
     public function describe(): string
     {
-        return $this->publishes() ? $this->store->describe() : 'disabled';
+        return $this->publishes() ? $this->store()->describe() : 'disabled';
     }
 
     /**
@@ -201,6 +210,11 @@ final class Manager
      * to do it. Length is what carries the strength here, and the password only
      * has to survive until the next reset.
      */
+    private function store(): CredentialStore
+    {
+        return $this->container->make(CredentialStore::class);
+    }
+
     private function generate(): string
     {
         return Str::password(

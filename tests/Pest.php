@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
+use LauroGuedes\DemoMode\Credentials\Credential;
+use LauroGuedes\DemoMode\Credentials\Manager;
 use LauroGuedes\DemoMode\DemoModeServiceProvider;
 use LauroGuedes\DemoMode\Tests\TestCase;
 
@@ -34,4 +37,21 @@ function demo(array $config = []): void
     }
 
     app()->register(DemoModeServiceProvider::class, force: true);
+}
+
+/**
+ * A demo with credentials already published, on a faked private disk.
+ *
+ * The preamble for anything that reads what a visitor would sign in with.
+ *
+ * @param  array<string, mixed>  $config
+ * @return list<Credential>
+ */
+function published(array $config = []): array
+{
+    Storage::fake('local');
+
+    demo($config);
+
+    return app(Manager::class)->rotate();
 }

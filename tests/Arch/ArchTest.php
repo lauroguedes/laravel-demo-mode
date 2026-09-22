@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\Component;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Contracts\Cleaner;
 use LauroGuedes\DemoMode\Contracts\DoctorCheck;
@@ -102,6 +103,16 @@ arch('every restriction implements the contract')
 arch('every doctor check implements the contract')
     ->expect('LauroGuedes\DemoMode\Doctor\Checks')
     ->toImplement(DoctorCheck::class);
+
+/**
+ * Both components have to be safe in a layout that does not know whether this is
+ * a demo, which means the decision lives in shouldRender() rather than in a
+ * caller's @demo wrapper.
+ */
+arch('the view components decide for themselves whether to render')
+    ->expect('LauroGuedes\DemoMode\View\Components')
+    ->toHaveMethod('shouldRender')
+    ->toExtend(Component::class);
 
 arch('every strategy implements the contract')
     ->expect('LauroGuedes\DemoMode\Reset\Strategies')

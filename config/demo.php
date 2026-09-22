@@ -225,16 +225,60 @@ return [
     |--------------------------------------------------------------------------
     | Banner
     |--------------------------------------------------------------------------
+    |
+    | The visible notice that the data is temporary. <x-demo-banner /> renders
+    | nothing when this installation is not a demo, so it is safe to put in a
+    | layout unconditionally.
+    |
     */
 
     'banner' => [
+
         'enabled' => true,
+
         'variant' => 'warning',
+
         'dismissible' => true,
-        'message' => null, // null uses the translation, with a live countdown
+
+        /*
+         | Null uses the translation, with the time until the next reset worked
+         | out from the cron expression the scheduler runs. Set a string here to
+         | say something else — and know that it will not count down.
+         */
+        'message' => null,
+
         'position' => 'top',
+
+        /*
+         | Class names by variant, so the common case is one line here rather
+         | than a published view. The package ships no styling of its own: it
+         | cannot know whether it is inside Tailwind, daisyUI or Bootstrap, and a
+         | component that guesses is one every application rewrites.
+         |
+         |   'classes' => ['warning' => 'alert alert-warning', 'default' => 'alert'],
+         */
         'classes' => [],
+
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The one small script
+    |--------------------------------------------------------------------------
+    |
+    | A ticking countdown, the banner's dismiss button, and copy-to-clipboard on
+    | the credentials component. Emitted inline, once per response, and only on a
+    | demo.
+    |
+    | Set false under a strict Content-Security-Policy. Every value is still on
+    | the page and the <time> element is still truthful; what goes away is the
+    | ticking, and the dismiss and copy buttons, which are not rendered at all
+    | without the script behind them. Publish the views and move the script into
+    | your own bundle if you want them back.
+    |
+    */
+
+    'script' => true,
 
     /*
     |--------------------------------------------------------------------------

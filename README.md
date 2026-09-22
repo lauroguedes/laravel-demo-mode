@@ -64,15 +64,17 @@ Demo::toArray();        // one payload for Blade, Livewire and Inertia
 ```
 
 ```blade
-@demo
-    <x-demo-banner />
-    <x-demo-credentials />
-@enddemo
+{{-- Both render nothing when this is not a demo, so no wrapper is needed --}}
+<x-demo-banner />
+<x-demo-credentials />
 
 @notdemo
     <a href="{{ route('oauth.google') }}">Sign in with Google</a>
 @endnotdemo
 ```
+
+For Inertia, add `ShareDemoState` to the web group and read `demo` from the page
+props. See [docs/frontend.md](docs/frontend.md).
 
 ## Commands
 

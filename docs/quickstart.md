@@ -90,15 +90,14 @@ Prints the plan — guard verdicts, strategy, cleaners — without touching anyt
 
 ```blade
 {{-- Your layout --}}
-@demo
-    <x-demo-banner />
-@enddemo
+<x-demo-banner />
 
 {{-- Your login page --}}
-@demo
-    <x-demo-credentials />
-@enddemo
+<x-demo-credentials />
 ```
+
+Neither needs an `@demo` wrapper: both render nothing at all when the
+installation is not a demo.
 
 The banner's countdown is derived from `DEMO_RESET_SCHEDULE`, so it cannot
 disagree with what the scheduler will actually do.

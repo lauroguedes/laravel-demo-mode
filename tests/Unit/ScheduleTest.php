@@ -44,8 +44,6 @@ it('gives the banner and the scheduler the same answer', function (): void {
             Schedule::parse('hourly')->nextRunAt()->toIso8601String(),
         )
         ->and(Demo::nextResetAt()->format('H:i'))->toBe('10:00');
-
-    CarbonImmutable::setTestNow();
 });
 
 it('answers nothing about a schedule when the installation is not a demo', function (): void {

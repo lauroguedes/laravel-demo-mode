@@ -8,6 +8,8 @@ return [
         'with_countdown' => 'Esta é uma demonstração. Tudo o que você alterar aqui será apagado em :time.',
         'without_countdown' => 'Esta é uma demonstração. Tudo o que você alterar aqui é apagado periodicamente.',
         'dismiss' => 'Dispensar',
+
+        'units' => ['hour' => 'h', 'minute' => 'min', 'second' => 's'],
     ],
 
     'credentials' => [

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace LauroGuedes\DemoMode;
 
 use Illuminate\Console\Scheduling\Schedule as Scheduler;
-use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
@@ -23,6 +22,9 @@ use LauroGuedes\DemoMode\Reset\Guards\EnvironmentIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\HostIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\NotProduction;
 use LauroGuedes\DemoMode\Restrictions\Pipeline as Restrictions;
+use LauroGuedes\DemoMode\View\Components\Banner;
+use LauroGuedes\DemoMode\View\Components\Credentials as CredentialsComponent;
+use LauroGuedes\DemoMode\View\Components\Script as ScriptComponent;
 
 /**
  * Registers the package, and mostly does not.
@@ -71,7 +73,6 @@ class DemoModeServiceProvider extends ServiceProvider
         $this->app->singleton(DemoMode::class, static fn (Container $app): DemoMode => new DemoMode(
             $app->make(Configuration::class),
             $app,
-            $app->make(CacheFactory::class),
         ));
 
         $this->app->singleton(CredentialStore::class, static fn (Container $app): CredentialStore => $app
@@ -92,6 +93,7 @@ class DemoModeServiceProvider extends ServiceProvider
     {
         $this->registerPublishing();
         $this->registerBladeConditionals();
+        $this->registerViewComponents();
         $this->registerCommands(self::SETUP_COMMANDS);
 
         if (! $this->app->make(Configuration::class)->enabled()) {
@@ -148,6 +150,21 @@ class DemoModeServiceProvider extends ServiceProvider
             $blade->directive('notdemo', static fn (): string => '<?php if (! app(\LauroGuedes\DemoMode\DemoMode::class)->enabled()): ?>');
             $blade->directive('endnotdemo', static fn (): string => '<?php endif; ?>');
         });
+    }
+
+    /**
+     * Registered on every installation, because both components render nothing
+     * when this is not a demo and a layout should not have to know which it is.
+     * loadViewComponentsAs defers until the compiler resolves, so a request that
+     * renders no view pays nothing.
+     */
+    private function registerViewComponents(): void
+    {
+        $this->loadViewComponentsAs('demo', [
+            'banner' => Banner::class,
+            'credentials' => CredentialsComponent::class,
+            'script' => ScriptComponent::class,
+        ]);
     }
 
     /**

@@ -8,6 +8,12 @@ return [
         'with_countdown' => 'This is a demonstration. Everything you change here is deleted in :time.',
         'without_countdown' => 'This is a demonstration. Everything you change here is deleted periodically.',
         'dismiss' => 'Dismiss',
+
+        /*
+         | Short units for the ticking countdown, which replaces the sentence's
+         | rendered duration a second after the page paints.
+         */
+        'units' => ['hour' => 'h', 'minute' => 'm', 'second' => 's'],
     ],
 
     'credentials' => [

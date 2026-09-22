@@ -16,6 +16,8 @@ use LauroGuedes\DemoMode\Reset\ResetReport;
 use LauroGuedes\DemoMode\Reset\Runner;
 use LauroGuedes\DemoMode\Reset\Schedule;
 use LauroGuedes\DemoMode\Support\CacheKeys;
+use LauroGuedes\DemoMode\Support\Options;
+use LauroGuedes\DemoMode\View\BannerState;
 use Throwable;
 
 /**
@@ -37,10 +39,15 @@ class DemoMode
 
     private bool $scheduleResolved = false;
 
+    /**
+     * The cache factory is resolved on use rather than injected, because this is
+     * a singleton that view components and middleware construct on every request
+     * of every installation. Only lastResetAt() needs it, and building the cache
+     * manager to answer "is this a demo" was work every non-demo page paid.
+     */
     public function __construct(
         private readonly Configuration $config,
         private readonly Container $container,
-        private readonly CacheFactory $cache,
     ) {}
 
     /**
@@ -100,7 +107,7 @@ class DemoMode
         }
 
         try {
-            $recorded = $this->cache->store()->get(CacheKeys::LAST_RESET);
+            $recorded = $this->container->make(CacheFactory::class)->store()->get(CacheKeys::LAST_RESET);
         } catch (Throwable) {
             return null;
         }
@@ -114,6 +121,19 @@ class DemoMode
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * How long until the next reset, in words.
+     *
+     * One owner for an expression that was written out in three places.
+     */
+    public function resetsIn(): ?string
+    {
+        return $this->nextResetAt()?->diffForHumans(
+            CarbonImmutable::now(),
+            syntax: CarbonInterface::DIFF_ABSOLUTE,
+        );
     }
 
     public function timeUntilReset(): ?CarbonInterval
@@ -183,37 +203,71 @@ class DemoMode
             return ['enabled' => false];
         }
 
-        $next = $this->nextResetAt();
+        $exposes = $this->exposesCredentials();
 
         return [
             'enabled' => true,
-            'next_reset_at' => $next?->toIso8601String(),
-            'resets_in' => $next?->diffForHumans(CarbonImmutable::now(), syntax: CarbonInterface::DIFF_ABSOLUTE),
+            'next_reset_at' => $this->nextResetAt()?->toIso8601String(),
+            'resets_in' => $this->resetsIn(),
             'last_reset_at' => $this->lastResetAt()?->toIso8601String(),
-            'credentials' => $this->exposesCredentials() ? $this->credentials() : null,
-            'banner' => $this->toBanner($next),
+            'credentials' => $exposes ? $this->credentials() : null,
+            /*
+             * Every published account, not only the one a form prefills. The
+             * Blade component lists them all, and a payload that carried one was
+             * the Inertia path being quietly poorer than the Blade path rather
+             * than differently shaped.
+             */
+            'accounts' => $exposes ? $this->allCredentials() : [],
+            'banner' => $this->banner()?->toArray(),
+            'scripted' => $this->scripted(),
         ];
     }
 
     /**
-     * @return array<string, mixed>|null
+     * The banner, resolved once for whichever front end is asking.
+     *
+     * Null when there is nothing to show. Both the Blade component and the
+     * shared payload read this rather than the banner.* keys, which is what
+     * stops them disagreeing about a default.
      */
-    public function toBanner(?CarbonImmutable $next = null): ?array
+    public function banner(): ?BannerState
     {
         if ($this->disabled() || ! $this->config->boolean('banner.enabled', true)) {
             return null;
         }
 
-        $next ??= $this->nextResetAt();
+        $variant = $this->config->string('banner.variant', 'warning');
+        $classes = $this->config->array('banner.classes');
 
-        return [
-            'message' => $this->config->nullableString('banner.message') ?? $this->defaultBannerMessage($next),
-            'variant' => $this->config->string('banner.variant', 'warning'),
-            'dismissible' => $this->config->boolean('banner.dismissible', true),
-            'position' => $this->config->string('banner.position', 'top'),
-            'classes' => $this->config->array('banner.classes'),
-            'next_reset_at' => $next?->toIso8601String(),
-        ];
+        return new BannerState(
+            variant: $variant,
+            class: Options::string($classes[$variant] ?? $classes['default'] ?? null, '') ?: null,
+            dismissible: $this->config->boolean('banner.dismissible', true) && $this->scripted(),
+            position: $this->config->string('banner.position', 'top'),
+            message: $this->config->nullableString('banner.message'),
+            nextResetAt: $this->nextResetAt(),
+            resetsIn: $this->resetsIn(),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function toBanner(): ?array
+    {
+        return $this->banner()?->toArray();
+    }
+
+    /**
+     * Whether the package's one small script will be on the page.
+     *
+     * Read by anything that renders a control the script operates. A dismiss
+     * button or a copy button with no script behind it is a control that lies,
+     * so both fold this in rather than rendering regardless.
+     */
+    public function scripted(): bool
+    {
+        return $this->enabled() && $this->config->boolean('script', true);
     }
 
     /**
@@ -254,17 +308,6 @@ class DemoMode
     private function exposesCredentials(): bool
     {
         return $this->config->boolean('credentials.expose_in_payload', true);
-    }
-
-    private function defaultBannerMessage(?CarbonImmutable $next): string
-    {
-        if (! $next instanceof CarbonImmutable) {
-            return (string) trans('demo::demo.banner.without_countdown');
-        }
-
-        return (string) trans('demo::demo.banner.with_countdown', [
-            'time' => $next->diffForHumans(CarbonImmutable::now(), syntax: CarbonInterface::DIFF_ABSOLUTE),
-        ]);
     }
 
     private function credentialManager(): Credentials

@@ -54,11 +54,20 @@ final readonly class StrategyFactory
 
         unset($definition['driver']);
 
+        /*
+         * The reset connection is folded in so that validate() can ask about the
+         * database it would actually touch. A strategy is handed options, not a
+         * ResetContext, and until it runs there is nothing else to ask.
+         */
         /** @var array<string, mixed> $options */
-        $options = [...$definition, ...array_filter(
-            $overrides,
-            static fn (mixed $value): bool => $value !== null && $value !== false,
-        )];
+        $options = [
+            'connection' => $this->config->nullableString('reset.connection'),
+            ...$definition,
+            ...array_filter(
+                $overrides,
+                static fn (mixed $value): bool => $value !== null && $value !== false,
+            ),
+        ];
 
         $strategy = $this->container->make($driver, ['options' => $options]);
 

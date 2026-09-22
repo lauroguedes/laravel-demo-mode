@@ -46,13 +46,19 @@ final readonly class ResetContext
     /**
      * Artisan arguments with the connection folded in when one is configured.
      *
+     * The flag is a parameter because '--database' is Laravel's convention and
+     * not everyone's: spatie/laravel-db-snapshots calls it '--connection', and
+     * hard-coding the other one meant any demo that set demo.reset.connection
+     * got "The --database option does not exist" at reset time — from a command
+     * this package builds, on a path validate() could not see.
+     *
      * @param  array<string, mixed>  $arguments
      * @return array<string, mixed>
      */
-    public function arguments(array $arguments = []): array
+    public function arguments(array $arguments = [], string $flag = '--database'): array
     {
         if ($this->connection !== null) {
-            $arguments['--database'] = $this->connection;
+            $arguments[$flag] = $this->connection;
         }
 
         return $arguments;

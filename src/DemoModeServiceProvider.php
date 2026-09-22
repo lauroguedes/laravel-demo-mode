@@ -12,6 +12,7 @@ use LauroGuedes\DemoMode\Console\CredentialsCommand;
 use LauroGuedes\DemoMode\Console\DoctorCommand;
 use LauroGuedes\DemoMode\Console\InstallCommand;
 use LauroGuedes\DemoMode\Console\ResetCommand;
+use LauroGuedes\DemoMode\Console\SnapshotCommand;
 use LauroGuedes\DemoMode\Console\StatusCommand;
 use LauroGuedes\DemoMode\Contracts\CredentialStore;
 use LauroGuedes\DemoMode\Credentials\Manager as Credentials;
@@ -102,7 +103,7 @@ class DemoModeServiceProvider extends ServiceProvider
 
         $this->app->make(Restrictions::class)->apply();
 
-        $this->registerCommands([ResetCommand::class]);
+        $this->registerCommands([ResetCommand::class, SnapshotCommand::class]);
         $this->registerSchedule();
     }
 

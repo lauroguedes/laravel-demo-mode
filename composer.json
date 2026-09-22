@@ -23,7 +23,9 @@
         "illuminate/console": "^13.0",
         "illuminate/contracts": "^13.0",
         "illuminate/database": "^13.0",
-        "illuminate/support": "^13.0"
+        "illuminate/process": "^13.0",
+        "illuminate/support": "^13.0",
+        "symfony/process": "^7.4|^8.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.12",
@@ -34,7 +36,8 @@
         "pestphp/pest-plugin-type-coverage": "^5.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
-        "rector/rector": "^2.6"
+        "rector/rector": "^2.6",
+        "spatie/laravel-db-snapshots": "^2.10"
     },
     "suggest": {
         "spatie/laravel-db-snapshots": "Required for the snapshot reset strategy (^2.0)"

@@ -81,10 +81,54 @@ return [
          */
         'strategies' => [
 
+            /*
+             | Portable, needs nothing extra, and slow in proportion to how much
+             | data makes the demo look like itself.
+             */
             'migrate-fresh-seed' => [
                 'driver' => Strategies\MigrateFreshSeed::class,
                 'seeder' => 'Database\Seeders\DemoSeeder',
                 'drop_views' => true,
+            ],
+
+            /*
+             | An import rather than a rebuild. Needs spatie/laravel-db-snapshots,
+             | which is suggested rather than required; demo:doctor says so before
+             | the first scheduled reset rather than after it.
+             |
+             | Take the baseline with 'demo:snapshot'.
+             */
+            'snapshot' => [
+                'driver' => Strategies\Snapshot::class,
+                'name' => 'demo-baseline',
+            ],
+
+            /*
+             | A .sql file the project keeps in version control. Shells out to the
+             | database client, which must be on the PATH.
+             */
+            'sql-dump' => [
+                'driver' => Strategies\SqlDump::class,
+                'path' => null, // database_path('demo/baseline.sql')
+                'client' => null, // 'mysql' or 'psql'; null picks by driver
+                'timeout' => 900,
+            ],
+
+            /*
+             | The escape hatch. Receives a ResetContext and does whatever the
+             | application means by "back to the start".
+             |
+             | Write it as a callable string or [Class::class, 'method'], not a
+             | Closure: a Closure here makes 'php artisan config:cache' fail
+             | outright, which rules it out on every deployment that caches
+             | config. Set 'seeds_credentials' when your callback re-hashes the
+             | published password, so demo:doctor stops warning that rotation
+             | cannot take effect.
+             */
+            'callback' => [
+                'driver' => Strategies\Callback::class,
+                'using' => null,
+                'seeds_credentials' => false,
             ],
 
         ],

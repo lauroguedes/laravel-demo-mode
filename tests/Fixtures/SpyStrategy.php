@@ -30,6 +30,9 @@ final class SpyStrategy implements ResetStrategy
 
     public static ?Throwable $throws = null;
 
+    /** @var list<string> */
+    public static array $problems = [];
+
     /**
      * @param  array<string, mixed>  $options
      */
@@ -40,6 +43,7 @@ final class SpyStrategy implements ResetStrategy
         self::$runs = 0;
         self::$prohibitedWhenRun = null;
         self::$throws = null;
+        self::$problems = [];
     }
 
     public function run(ResetContext $context): void
@@ -57,9 +61,14 @@ final class SpyStrategy implements ResetStrategy
         return 'Record the call and change nothing';
     }
 
+    public function seedsCredentials(): bool
+    {
+        return true;
+    }
+
     public function validate(): array
     {
-        return [];
+        return self::$problems;
     }
 
     /**

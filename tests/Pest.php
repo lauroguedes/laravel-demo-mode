@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use LauroGuedes\DemoMode\Credentials\Credential;
 use LauroGuedes\DemoMode\Credentials\Manager;
 use LauroGuedes\DemoMode\DemoModeServiceProvider;
+use LauroGuedes\DemoMode\Reset\ResetContext;
 use LauroGuedes\DemoMode\Tests\TestCase;
 
 pest()->extend(TestCase::class)->in('Unit', 'Feature', 'Integration', 'Arch');
@@ -54,4 +56,31 @@ function published(array $config = []): array
     demo($config);
 
     return app(Manager::class)->rotate();
+}
+
+/**
+ * A ResetContext for exercising one strategy on its own.
+ *
+ * @param  array<string, mixed>  $options
+ */
+function resetContext(?Kernel $artisan = null, array $options = [], ?string $connection = null): ResetContext
+{
+    return new ResetContext(
+        app: app(),
+        artisan: $artisan ?? app(Kernel::class),
+        connection: $connection,
+        options: $options,
+        output: static fn (string $message): null => null,
+    );
+}
+
+/**
+ * The config key holding the current connection's database name.
+ *
+ * The suite runs on sqlite by default and on MySQL or PostgreSQL in the database
+ * job, so a test that named one connection passed only on that one.
+ */
+function databaseNameKey(): string
+{
+    return 'database.connections.'.config('database.default').'.database';
 }

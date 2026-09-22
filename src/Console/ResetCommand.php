@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace LauroGuedes\DemoMode\Console;
 
 use Illuminate\Console\Command;
+use LauroGuedes\DemoMode\Console\Concerns\ConfirmsDestruction;
 use LauroGuedes\DemoMode\Exceptions\ResetInProgress;
 use LauroGuedes\DemoMode\Exceptions\ResetRefused;
 use LauroGuedes\DemoMode\Reset\Runner;
@@ -26,6 +27,8 @@ use Throwable;
  */
 final class ResetCommand extends Command
 {
+    use ConfirmsDestruction;
+
     protected $signature = 'demo:reset
         {--force : Skip the confirmation prompt, for a scheduled run}
         {--strategy= : Override the configured reset strategy}
@@ -44,7 +47,7 @@ final class ResetCommand extends Command
             'dry-run' => $this->option('dry-run') === true ? true : null,
         ], static fn (mixed $value): bool => $value !== null);
 
-        if ($this->option('dry-run') !== true && ! $this->confirmed()) {
+        if ($this->option('dry-run') !== true && ! $this->confirmed('This deletes every row in the demo database. Continue?')) {
             $this->components->info('Nothing was changed.');
 
             return self::FAILURE;
@@ -88,36 +91,5 @@ final class ResetCommand extends Command
         ));
 
         return self::SUCCESS;
-    }
-
-    /**
-     * The interactive confirmation, which is the only guard --force touches.
-     *
-     * A non-interactive run with no --force refuses rather than proceeding.
-     * There is nobody at the terminal to answer, and taking silence for consent
-     * on a command that drops every table is the wrong way round — the same
-     * reason 'migrate --force' exists. A cron entry says --force because
-     * somebody wrote it there, which is the consent.
-     */
-    private function confirmed(): bool
-    {
-        if ($this->option('force') === true) {
-            return true;
-        }
-
-        if (! $this->input->isInteractive()) {
-            $this->components->error('Nothing is attached to answer the confirmation. Pass --force if you meant this.');
-
-            return false;
-        }
-
-        return $this->confirm('This deletes every row in the demo database. Continue?');
-    }
-
-    private function stringOption(string $name): ?string
-    {
-        $value = $this->option($name);
-
-        return is_string($value) && $value !== '' ? $value : null;
     }
 }

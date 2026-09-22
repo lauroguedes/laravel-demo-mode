@@ -57,6 +57,14 @@ final readonly class MigrateFreshSeed implements ResetStrategy
     }
 
     /**
+     * The seeder runs, so whatever the reset staged is what gets hashed.
+     */
+    public function seedsCredentials(): bool
+    {
+        return $this->seeder() !== null;
+    }
+
+    /**
      * The check that matters most here, and the one an application is most
      * likely to trip: a seeder named in config that does not exist.
      *

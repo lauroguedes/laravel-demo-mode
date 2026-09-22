@@ -146,3 +146,32 @@ function applyScenario(array $scenario): void
     app()->detectEnvironment(fn (): string => $env);
     app()->register(DemoModeServiceProvider::class, force: true);
 }
+
+/**
+ * A strategy that says it cannot run must stop the reset, not merely report it
+ * in an advisory command somebody may never have run. --force does not skip it,
+ * for the same reason it does not skip the guards.
+ */
+it('refuses when the strategy says it cannot run', function (): void {
+    applyScenario([
+        'enabled' => true, 'env' => 'demo', 'environments' => ['demo'], 'hosts' => null,
+    ]);
+
+    SpyStrategy::$problems = ['The baseline has not been taken.'];
+
+    expect(fn (): mixed => app(Runner::class)->run())
+        ->toThrow(ResetRefused::class, 'The baseline has not been taken.')
+        ->and(SpyStrategy::$runs)->toBe(0);
+});
+
+it('does not let --force past a strategy that says it cannot run', function (): void {
+    applyScenario([
+        'enabled' => true, 'env' => 'demo', 'environments' => ['demo'], 'hosts' => null,
+    ]);
+
+    SpyStrategy::$problems = ['The database client is not on the PATH.'];
+
+    $this->artisan('demo:reset', ['--force' => true])->assertFailed();
+
+    expect(SpyStrategy::$runs)->toBe(0);
+});

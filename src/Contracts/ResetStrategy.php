@@ -30,12 +30,29 @@ interface ResetStrategy
     public function describe(): string;
 
     /**
+     * Whether running this leaves the published accounts re-hashed.
+     *
+     * Rotation only means anything if something writes the new password into the
+     * database. A seeder does; restoring a snapshot or a dump does not — those
+     * bring back whatever hash the baseline froze, so a demo that rotates on top
+     * of one publishes a password that opens nothing, and keeps the baseline's
+     * password working forever. Both failures are silent, which is why the
+     * package asks rather than assuming.
+     */
+    public function seedsCredentials(): bool;
+
+    /**
      * Anything that would stop run() from working, for 'demo:doctor'.
      *
      * Checked without running: a missing suggested dependency, a seeder class
-     * that does not exist, a dump file that is not there. Returning problems
-     * here is how a demo finds out before its first scheduled reset rather than
-     * after it, with the tables already dropped.
+     * that does not exist, a dump file that is not there, a client binary that
+     * is not installed. Returning problems here is how a demo finds out before
+     * its first scheduled reset rather than after it, with the tables already
+     * dropped.
+     *
+     * The Runner calls this too, immediately after the guards and before it
+     * takes the lock, so the promise does not depend on anybody having run
+     * 'demo:doctor'. Anything answerable without side effects belongs here.
      *
      * @return list<string>
      */

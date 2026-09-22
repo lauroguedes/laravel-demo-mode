@@ -26,7 +26,7 @@ it('finds nothing wrong with a demo that is set up properly', function (): void 
         'app.url' => 'https://demo.example.com',
         'demo.reset.strategies.migrate-fresh-seed.seeder' => Seeder::class,
         'demo.guards.protected' => [stdClass::class => ['email' => 'admin@demo.test']],
-        'database.connections.testing.database' => 'demo_playground',
+        databaseNameKey() => 'demo_playground',
     ]);
 
     expect(findings())->toBe([]);
@@ -118,13 +118,13 @@ it('warns when nothing rotates', function (): void {
 });
 
 it('warns when the database does not look disposable', function (): void {
-    demo(['database.connections.testing.database' => '/var/lib/acme_production']);
+    demo([databaseNameKey() => '/var/lib/acme_production']);
 
     expect(findings())->toContain('database-name:warning');
 });
 
 it('says nothing about a database that looks disposable', function (string $name): void {
-    demo(['database.connections.testing.database' => $name]);
+    demo([databaseNameKey() => $name]);
 
     expect(findings())->not->toContain('database-name:warning');
 })->with(['acme_demo', 'staging', '/var/lib/playground.sqlite', 'acme_sandbox', ':memory:']);

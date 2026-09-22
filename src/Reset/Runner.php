@@ -20,6 +20,7 @@ use LauroGuedes\DemoMode\Events\ResetCompleted;
 use LauroGuedes\DemoMode\Events\ResetFailed;
 use LauroGuedes\DemoMode\Events\ResetStarting;
 use LauroGuedes\DemoMode\Exceptions\ResetInProgress;
+use LauroGuedes\DemoMode\Exceptions\ResetRefused;
 use LauroGuedes\DemoMode\Support\CacheKeys;
 use LauroGuedes\DemoMode\Support\DestructiveCommands;
 use Throwable;
@@ -85,6 +86,19 @@ final readonly class Runner
         $this->guards->enforce();
 
         $strategy = $this->strategies->make($options['strategy'] ?? null, $options);
+
+        /*
+         * Asked here rather than only by demo:doctor. Every "refuses before
+         * anything is dropped" promise in a strategy is worth exactly what the
+         * destructive path does about it, and an advisory command somebody may
+         * or may not have run is not a barrier. --force does not skip this, for
+         * the same reason it does not skip the guards.
+         */
+        $problems = $strategy->validate();
+
+        if ($problems !== []) {
+            throw new ResetRefused($problems);
+        }
 
         if (($options['dry-run'] ?? false) === true) {
             return $this->plan($strategy);

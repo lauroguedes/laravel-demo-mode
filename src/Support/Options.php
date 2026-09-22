@@ -30,4 +30,22 @@ final class Options
     {
         return is_string($value) && $value !== '' ? $value : $default;
     }
+
+    public static function nullableString(mixed $value): ?string
+    {
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * Anything a database config might put in a port or a timeout, as a string.
+     */
+    public static function scalarString(mixed $value, string $default): string
+    {
+        return is_scalar($value) && (string) $value !== '' ? (string) $value : $default;
+    }
+
+    public static function integer(mixed $value, int $default): int
+    {
+        return is_numeric($value) ? (int) $value : $default;
+    }
 }

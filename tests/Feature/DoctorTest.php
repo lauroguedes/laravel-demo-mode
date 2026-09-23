@@ -9,6 +9,7 @@ use LauroGuedes\DemoMode\Doctor\Doctor;
 use LauroGuedes\DemoMode\Doctor\Finding;
 use LauroGuedes\DemoMode\Restrictions\DisableMail;
 use Workbench\App\Models\DemoUser;
+use Workbench\App\Models\SandboxedNote;
 
 function findings(): array
 {
@@ -296,4 +297,38 @@ it('says nothing about a store whose locks are real and shared', function (): vo
     demo(['cache.default' => 'file']);
 
     expect(findings())->not->toContain('reset-lock:error', 'reset-lock:warning');
+});
+
+it('says nothing about the sandbox on a demo that shares its data', function (): void {
+    demo(['demo.sandbox.driver' => 'shared']);
+
+    expect(findings())->not->toContain('sandbox:error');
+});
+
+/**
+ * A scoped demo with no marked models behaves exactly like a shared one, and
+ * nothing about it looks wrong.
+ */
+it('errors when scoped isolation isolates nothing', function (): void {
+    demo(['demo.sandbox.driver' => 'scoped', 'demo.sandbox.models' => []]);
+
+    expect(findings())->toContain('sandbox:error');
+});
+
+/**
+ * The silent one: an unmarked model means visitors see each other's rows in that
+ * table while the rest of the demo looks isolated.
+ */
+it('errors on a model that is listed as sandboxed but is not', function (): void {
+    demo(['demo.sandbox.driver' => 'scoped', 'demo.sandbox.models' => [DemoUser::class]]);
+
+    expect(findings())->toContain('sandbox:error');
+});
+
+it('accepts a model that actually carries the trait', function (): void {
+    demo(['demo.sandbox.driver' => 'scoped', 'demo.sandbox.models' => [SandboxedNote::class]]);
+
+    freshSchema();
+
+    expect(findings())->not->toContain('sandbox:error');
 });

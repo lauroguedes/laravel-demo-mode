@@ -16,6 +16,7 @@ use Illuminate\View\Compilers\BladeCompiler;
 use LauroGuedes\DemoMode\Console\CredentialsCommand;
 use LauroGuedes\DemoMode\Console\DoctorCommand;
 use LauroGuedes\DemoMode\Console\InstallCommand;
+use LauroGuedes\DemoMode\Console\PruneSandboxesCommand;
 use LauroGuedes\DemoMode\Console\ResetCommand;
 use LauroGuedes\DemoMode\Console\SnapshotCommand;
 use LauroGuedes\DemoMode\Console\StatusCommand;
@@ -26,6 +27,7 @@ use LauroGuedes\DemoMode\Guards\ConnectionGuard;
 use LauroGuedes\DemoMode\Guards\ModelGuard;
 use LauroGuedes\DemoMode\Guards\ProtectedRecords;
 use LauroGuedes\DemoMode\Http\Controllers\ResetController;
+use LauroGuedes\DemoMode\Http\Middleware\AttachSandbox;
 use LauroGuedes\DemoMode\Http\Middleware\EnsureDemoHost;
 use LauroGuedes\DemoMode\Http\Middleware\ReadOnlyMiddleware;
 use LauroGuedes\DemoMode\Reset\GuardChain;
@@ -34,6 +36,7 @@ use LauroGuedes\DemoMode\Reset\Guards\EnvironmentIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\HostIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\NotProduction;
 use LauroGuedes\DemoMode\Restrictions\Pipeline as Restrictions;
+use LauroGuedes\DemoMode\Sandbox\Manager as SandboxManager;
 use LauroGuedes\DemoMode\Support\Options;
 use LauroGuedes\DemoMode\View\Components\Banner;
 use LauroGuedes\DemoMode\View\Components\Credentials as CredentialsComponent;
@@ -94,6 +97,14 @@ class DemoModeServiceProvider extends ServiceProvider
 
         $this->app->singleton(Credentials::class);
 
+        /*
+         * Scoped rather than singleton: what it resolves belongs to one request,
+         * and under Octane a singleton would carry one visitor's sandbox into the
+         * next visitor's request. It keys its own memo to the session as well,
+         * because a test makes two requests against one container too.
+         */
+        $this->app->scoped(SandboxManager::class);
+
         $this->app->bind(GuardChain::class, static fn (Container $app): GuardChain => new GuardChain([
             $app->make(DemoModeIsEnabled::class),
             $app->make(EnvironmentIsAllowed::class),
@@ -117,6 +128,7 @@ class DemoModeServiceProvider extends ServiceProvider
 
         $this->registerWriteGuards();
         $this->registerOnDemandReset();
+        $this->registerSandbox();
         $this->registerCommands([ResetCommand::class, SnapshotCommand::class]);
         $this->registerSchedule();
     }
@@ -145,6 +157,17 @@ class DemoModeServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../resources/lang' => $this->app->langPath('vendor/demo'),
         ], 'demo-translations');
+
+        /*
+         * Published rather than loaded, because only the scoped sandbox driver
+         * needs this table and a package should not add one to a database that
+         * never asked. demo:doctor reports it missing when scoped is on.
+         */
+        $this->publishes([
+            __DIR__.'/../database/migrations/create_demo_sandboxes_table.php.stub' => $this->app->databasePath(
+                'migrations/'.date('Y_m_d_His').'_create_demo_sandboxes_table.php',
+            ),
+        ], 'demo-migrations');
     }
 
     /**
@@ -260,6 +283,39 @@ class DemoModeServiceProvider extends ServiceProvider
                 'throttle:demo-mode-reset',
             ])
             ->name($config->string('on_demand.name', 'demo.reset'));
+    }
+
+    /**
+     * The sandbox middleware alias and the pruning schedule.
+     *
+     * The middleware is an alias rather than something pushed into the web group,
+     * because it has to run after the session middleware and that ordering is the
+     * application's to state. The Manager resolves a sandbox on first use anyway,
+     * so what the middleware adds is the expiry renewal — the difference between
+     * a TTL and a deadline.
+     */
+    private function registerSandbox(): void
+    {
+        $this->app->make(Router::class)->aliasMiddleware('demo.sandbox', AttachSandbox::class);
+
+        if (! $this->app->make(Configuration::class)->scoped()) {
+            return;
+        }
+
+        $this->registerCommands([PruneSandboxesCommand::class]);
+
+        $this->callAfterResolving(Scheduler::class, function (Scheduler $schedule): void {
+            $expression = $this->app->make(Configuration::class)->nullableString('sandbox.prune');
+
+            if ($expression === null) {
+                return;
+            }
+
+            $schedule->command(PruneSandboxesCommand::class)
+                ->cron($expression)
+                ->withoutOverlapping()
+                ->onOneServer();
+        });
     }
 
     /**

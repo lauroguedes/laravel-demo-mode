@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Events\WriteBlocked;

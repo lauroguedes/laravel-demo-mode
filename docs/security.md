@@ -138,10 +138,22 @@ The model guard hooks Eloquent events, so it does not see `Model::where(…)
 A visitor cannot choose those paths, but your own code can; the list is in
 [write-guards.md](write-guards.md).
 
-**Isolation is not multi-tenancy.** Everyone shares one dataset today. When the
-scoped sandbox driver lands it will keep ordinary visitors out of each other's
-rows; it will not be a security boundary, and a model you forget to mark will
-leak between visitors while appearing to work.
+**Isolation is not multi-tenancy.** The `scoped` sandbox driver keeps ordinary
+visitors out of each other's rows. It is not a security boundary, it has not been
+audited as one, and a model you forget to mark leaks rows while appearing to work
+— which is why `demo:doctor` checks every model you list. See
+[sandbox.md](sandbox.md).
+
+What it does get right is that a visitor cannot assert their own identity. The
+sandbox id lives in the session and is a lookup key rather than a claim, so a
+forged one mints a new empty sandbox instead of selecting somebody else's rows —
+and on the write side whatever `demo_sandbox_id` a request carries is overwritten
+with the visitor's own, so a form post cannot plant a row in another sandbox or
+publish one to everybody.
+
+Two limits worth knowing: the scope is Eloquent-only, so a `DB::table()` query
+against a marked table reads across sandboxes with no warning; and a database
+error while resolving a sandbox fails the request rather than serving unscoped.
 
 **This is not password-protecting a work in progress.** That is
 `php artisan down --secret`, which ships with Laravel.

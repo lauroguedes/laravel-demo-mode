@@ -39,6 +39,17 @@ class Configuration
         return (bool) $this->repository()->get('demo.enabled', false);
     }
 
+    /**
+     * Whether visitors are isolated from each other.
+     *
+     * Asked by the provider, the Manager and the trait, and each of them would
+     * otherwise spell out the same comparison against the same string.
+     */
+    public function scoped(): bool
+    {
+        return $this->enabled() && $this->string('sandbox.driver', 'shared') === 'scoped';
+    }
+
     public function boolean(string $key, bool $default = false): bool
     {
         $value = $this->repository()->get($this->qualify($key));

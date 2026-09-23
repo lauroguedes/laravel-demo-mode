@@ -25,5 +25,17 @@ return new class extends Migration
             $table->id();
             $table->string('name');
         });
+
+        Schema::create('demo_notes', function (Blueprint $table): void {
+            $table->id();
+            $table->string('body');
+            $table->string('demo_sandbox_id')->nullable()->index();
+        });
+
+        Schema::create('demo_sandboxes', function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamps();
+        });
     }
 };

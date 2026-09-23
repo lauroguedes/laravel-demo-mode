@@ -104,6 +104,15 @@ Off by default — it puts a `migrate:fresh` behind an HTTP request. Throttled,
 cooled down, queued, CSRF-protected and host-checked; see
 [docs/on-demand-reset.md](docs/on-demand-reset.md).
 
+## Isolating visitors from each other
+
+```php
+'sandbox' => ['driver' => 'scoped'],
+```
+
+Each visitor gets the seeded baseline plus what they created. Not multi-tenancy
+and not a security boundary; see [docs/sandbox.md](docs/sandbox.md).
+
 ## Documentation
 
 Full documentation is in [`docs/`](docs). Start with

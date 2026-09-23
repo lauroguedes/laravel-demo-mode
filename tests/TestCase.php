@@ -54,5 +54,8 @@ abstract class TestCase extends Orchestra
     {
         $app['config']->set('demo.enabled', false);
         $app['config']->set('database.default', (string) (env('DB_CONNECTION') ?: 'testing'));
+
+        /* The web middleware group encrypts cookies, so it needs a key. */
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
     }
 }

@@ -84,3 +84,18 @@ function databaseNameKey(): string
 {
     return 'database.connections.'.config('database.default').'.database';
 }
+
+/**
+ * A known-good schema for the tests that touch one.
+ *
+ * migrate:fresh rather than migrate, because several tests drop a table on
+ * purpose and a persistent database would not bring it back — the migration is
+ * already recorded as run. On the in-memory sqlite the suite uses by default the
+ * difference is invisible, which is exactly why it only ever showed up on MySQL.
+ */
+function freshSchema(): void
+{
+    app('migrator')->path(__DIR__.'/../workbench/database/migrations');
+
+    test()->artisan('migrate:fresh', ['--force' => true]);
+}

@@ -18,6 +18,7 @@ use LauroGuedes\DemoMode\Doctor\Checks\OnDemandResetIsGuarded;
 use LauroGuedes\DemoMode\Doctor\Checks\PublishedAccountIsProtected;
 use LauroGuedes\DemoMode\Doctor\Checks\ResetLockIsReal;
 use LauroGuedes\DemoMode\Doctor\Checks\RotationCanTakeEffect;
+use LauroGuedes\DemoMode\Doctor\Checks\SandboxIsCoherent;
 use LauroGuedes\DemoMode\Doctor\Checks\ScheduleIsReadable;
 use LauroGuedes\DemoMode\Doctor\Checks\StrategyIsUsable;
 use LauroGuedes\DemoMode\Exceptions\InvalidConfiguration;
@@ -54,6 +55,7 @@ final class Doctor
         ConnectionGuardIsSurvivable::class,
         OnDemandResetIsGuarded::class,
         ResetLockIsReal::class,
+        SandboxIsCoherent::class,
         DatabaseLooksDisposable::class,
     ];
 

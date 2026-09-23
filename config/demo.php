@@ -484,10 +484,53 @@ return [
     | 'shared' is the default and the only one with no cost: everyone sees the
     | same data.
     |
+    | 'scoped' gives each visitor the seeded baseline plus what they created. It
+    | is real, and it is not multi-tenancy: it keeps ordinary visitors out of each
+    | other's way, it has not been audited as a security boundary, and a model you
+    | forget to mark leaks rows while appearing to work.
+    |
+    | It needs three things: the demo_sandboxes migration published and run, a
+    | demo_sandbox_id column on every marked table, and session middleware on the
+    | routes that use it.
+    |
     */
 
     'sandbox' => [
+
         'driver' => env('DEMO_SANDBOX', 'shared'),
+
+        /*
+         | Seconds of inactivity before a sandbox is pruned. The middleware
+         | pushes this out on every request, so it is a TTL rather than a
+         | deadline. Null keeps them forever, which on a public demo means a
+         | table that only grows.
+         */
+        'ttl' => 3600,
+
+        /*
+         | The session key the identifier lives under. In the session rather than
+         | a cookie of its own, because Laravel's session cookie is already
+         | signed and encrypted — and the identifier is treated as untrusted
+         | regardless: it is a lookup key, and one that matches no live row mints
+         | a new empty sandbox rather than selecting anybody else's rows.
+         */
+        'key' => 'demo_sandbox',
+
+        /*
+         | The models that carry BelongsToSandbox. Listed here so demo:doctor can
+         | check they all actually do — a half-marked set leaks rows between
+         | visitors while appearing to work, which is the one way this feature
+         | fails silently.
+         */
+        'models' => [
+            // \App\Models\Post::class,
+        ],
+
+        /*
+         | When to prune. Registered by the package, like the reset schedule.
+         */
+        'prune' => '*/15 * * * *',
+
     ],
 
 ];

@@ -14,7 +14,9 @@ use LauroGuedes\DemoMode\Doctor\Checks\CredentialsSurviveTheReset;
 use LauroGuedes\DemoMode\Doctor\Checks\DatabaseLooksDisposable;
 use LauroGuedes\DemoMode\Doctor\Checks\GuardsWouldPass;
 use LauroGuedes\DemoMode\Doctor\Checks\MailIsContained;
+use LauroGuedes\DemoMode\Doctor\Checks\OnDemandResetIsGuarded;
 use LauroGuedes\DemoMode\Doctor\Checks\PublishedAccountIsProtected;
+use LauroGuedes\DemoMode\Doctor\Checks\ResetLockIsReal;
 use LauroGuedes\DemoMode\Doctor\Checks\RotationCanTakeEffect;
 use LauroGuedes\DemoMode\Doctor\Checks\ScheduleIsReadable;
 use LauroGuedes\DemoMode\Doctor\Checks\StrategyIsUsable;
@@ -50,6 +52,8 @@ final class Doctor
         PublishedAccountIsProtected::class,
         RotationCanTakeEffect::class,
         ConnectionGuardIsSurvivable::class,
+        OnDemandResetIsGuarded::class,
+        ResetLockIsReal::class,
         DatabaseLooksDisposable::class,
     ];
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LauroGuedes\DemoMode\Support;
 
+use Illuminate\Support\Str;
 use LauroGuedes\DemoMode\Configuration;
 
 /**
@@ -61,6 +62,21 @@ final readonly class CacheKeys
             self::LAST_RESET => null,
             $this->credentials() => null,
         ];
+    }
+
+    /**
+     * Whether a FlushCache 'except' list keeps this key.
+     *
+     * Asked by more than one doctor check, because more than one thing breaks
+     * when the answer is no and each breaks silently. Str::is() is used so the
+     * question is answered by the same matcher the cleaner uses rather than by a
+     * second reading of the pattern rules.
+     *
+     * @param  list<string>  $patterns
+     */
+    public function isPreserved(string $key, array $patterns): bool
+    {
+        return Str::is($patterns, $key);
     }
 
     /**

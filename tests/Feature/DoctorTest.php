@@ -28,6 +28,8 @@ it('finds nothing wrong with a demo that is set up properly', function (): void 
         'demo.reset.strategies.migrate-fresh-seed.seeder' => Seeder::class,
         'demo.guards.protected' => [DemoUser::class => ['email' => 'admin@demo.test']],
         databaseNameKey() => 'demo_playground',
+        /* The suite's array store would otherwise warn about single-process locks. */
+        'cache.default' => 'file',
     ]);
 
     expect(findings())->toBe([]);
@@ -193,4 +195,105 @@ it('says nothing about tables this application does not keep in the database', f
     ]);
 
     expect(findings())->not->toContain('connection-guard:error');
+});
+
+it('says nothing about the on-demand route when it is off', function (): void {
+    demo(['demo.on_demand.enabled' => false]);
+
+    expect(findings())->not->toContain('on-demand-reset:error', 'on-demand-reset:warning');
+});
+
+/**
+ * Without the web group there is no CSRF token, and without that any page on the
+ * internet could rebuild the demo with a form post the visitor never saw.
+ */
+it('errors when the on-demand route has no CSRF protection', function (): void {
+    demo(['demo.on_demand.enabled' => true, 'demo.on_demand.middleware' => []]);
+
+    expect(findings())->toContain('on-demand-reset:error');
+});
+
+it('accepts the web group', function (): void {
+    demo(['demo.on_demand.enabled' => true, 'demo.on_demand.middleware' => ['web']]);
+
+    expect(findings())->not->toContain('on-demand-reset:error');
+});
+
+/**
+ * A throttle counts per visitor, so enough visitors are enough rebuilds.
+ */
+it('warns when the on-demand route has no cooldown', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.middleware' => ['web'],
+        'demo.on_demand.cooldown' => 0,
+    ]);
+
+    expect(findings())->toContain('on-demand-reset:warning');
+});
+
+it('warns when a queued rebuild would run inline anyway', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.middleware' => ['web'],
+        'demo.on_demand.queue' => true,
+        'queue.default' => 'sync',
+    ]);
+
+    expect(findings())->toContain('on-demand-reset:warning');
+});
+
+/**
+ * The cooldown is measured from the last recorded reset, which lives in the same
+ * cache the reset flushes. Without the "except" list keeping it, every rebuild
+ * erases the clock, the cooldown reads "never reset" and permits everything, and
+ * nothing anywhere says so.
+ */
+it('errors when the reset would erase the clock its own cooldown is measured from', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.middleware' => ['web'],
+        'demo.on_demand.cooldown' => 900,
+        'demo.cleaners' => [FlushCache::class => ['except' => []]],
+    ]);
+
+    expect(findings())->toContain('on-demand-reset:error');
+});
+
+it('accepts a cleaner that keeps the package its own keys', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.middleware' => ['web'],
+        'demo.on_demand.cooldown' => 900,
+        'demo.cleaners' => [FlushCache::class => ['except' => ['demo-mode:*']]],
+    ]);
+
+    expect(findings())->not->toContain('on-demand-reset:error');
+});
+
+/**
+ * NullStore implements LockProvider and hands back a lock whose acquire()
+ * returns true for everybody, so the Runner's own instanceof check passes and
+ * two migrate:fresh runs proceed against one database.
+ */
+it('errors when the cache store grants every lock', function (): void {
+    demo(['cache.default' => 'null']);
+
+    expect(findings())->toContain('reset-lock:error');
+});
+
+/**
+ * The array store's locks are real but live inside one PHP process, so a reset in
+ * a queue worker and one in a web request never contend.
+ */
+it('warns when locks cannot cross a process boundary', function (): void {
+    demo(['cache.default' => 'array']);
+
+    expect(findings())->toContain('reset-lock:warning');
+});
+
+it('says nothing about a store whose locks are real and shared', function (): void {
+    demo(['cache.default' => 'file']);
+
+    expect(findings())->not->toContain('reset-lock:error', 'reset-lock:warning');
 });

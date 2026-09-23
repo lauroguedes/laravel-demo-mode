@@ -70,6 +70,12 @@ return [
 
         'maintenance' => (bool) env('DEMO_RESET_MAINTENANCE', true),
 
+        /*
+         | The lock that stops two resets overlapping lives in the cache, so it
+         | is only as real as the cache store. 'null' grants every lock to
+         | everybody and 'array' keeps them inside one PHP process; demo:doctor
+         | reports both, because either makes this setting decorative.
+         */
         'lock_ttl' => 1800,
 
         'connection' => null,
@@ -393,6 +399,82 @@ return [
     */
 
     'script' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reset on demand
+    |--------------------------------------------------------------------------
+    |
+    | An HTTP route that rebuilds the demo. It hands an anonymous visitor a
+    | migrate:fresh, so it is off by default and every control around it matters.
+    |
+    | Note what it resets: the whole demonstration, not the visitor's own corner
+    | of it. Whatever anybody else was partway through goes with it. On a demo
+    | more than one person looks at, per-visitor isolation is the thing that
+    | actually wants building.
+    |
+    | Keep 'web' in the middleware — that is where CSRF comes from, and without
+    | it any page anywhere can rebuild your demo with a form post. Consider
+    | adding 'auth': "I broke the demo" is something a signed-in visitor asks.
+    |
+    | Three limits, stopping three different things: the throttle stops one
+    | visitor pressing repeatedly, the cooldown stops many visitors each pressing
+    | once, and the Runner's lock stops two resets overlapping.
+    |
+    */
+
+    'on_demand' => [
+
+        'enabled' => (bool) env('DEMO_ON_DEMAND', false),
+
+        'route' => '/demo/reset',
+
+        'name' => 'demo.reset',
+
+        'middleware' => ['web'],
+
+        /*
+         | Requests per visitor per minute-window, as Laravel's throttle reads
+         | it: attempts, then minutes.
+         */
+        'throttle' => ['attempts' => 1, 'minutes' => 60],
+
+        /*
+         | How the throttle counts a visitor: 'ip', 'session' or 'global'.
+         |
+         | Behind a proxy, 'ip' is only as trustworthy as your TrustProxies
+         | configuration — every visitor may look like the load balancer, and one
+         | of them then exhausts the limit for all of them. 'session' counts a
+         | browser instead.
+         |
+         | Neither is a boundary against somebody determined: a session cookie is
+         | deleted and an IP is changed. The throttle stops accidents and casual
+         | repetition. The cooldown below is the limit that holds, because it
+         | counts resets rather than requesters — set it.
+         */
+        'per' => 'ip',
+
+        /*
+         | Seconds since the last reset — from any source, including the
+         | scheduler — before another is allowed.
+         */
+        'cooldown' => 900,
+
+        /*
+         | Off the request by default. A rebuild takes as long as it takes, and
+         | doing it inline means a visitor watching a spinner until the proxy in
+         | front of your application gives up.
+         */
+        'queue' => true,
+
+        /*
+         | Where to send a browser afterwards. Null aborts with the status code,
+         | which is what an API wants; 'back' or a path redirects with a flashed
+         | 'status' or 'error' message, which is what a person wants.
+         */
+        'redirect' => null,
+
+    ],
 
     /*
     |--------------------------------------------------------------------------

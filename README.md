@@ -94,6 +94,16 @@ props. See [docs/frontend.md](docs/frontend.md).
 - **A demo data generator.** The seeder is yours; the package runs it.
 - **Multi-tenancy.** Visitor isolation is deliberately ephemeral and disposable.
 
+## Letting visitors reset it
+
+```php
+'on_demand' => ['enabled' => true],
+```
+
+Off by default — it puts a `migrate:fresh` behind an HTTP request. Throttled,
+cooled down, queued, CSRF-protected and host-checked; see
+[docs/on-demand-reset.md](docs/on-demand-reset.md).
+
 ## Documentation
 
 Full documentation is in [`docs/`](docs). Start with

@@ -122,9 +122,14 @@ final readonly class Runner
      *
      * Not bypassable by --force: two concurrent migrate:fresh runs against one
      * database is how a demo ends up with half a schema and no way to tell which
-     * half. A store with no lock support (the array store, in tests) returns
-     * null, and the caller treats that as "nothing to contend with" rather than
-     * as a refusal.
+     * half.
+     *
+     * The instanceof check is weaker than it looks, which is why demo:doctor
+     * carries ResetLockIsReal. NullStore implements LockProvider and grants every
+     * lock to everybody, and ArrayStore's locks live inside one process — so a
+     * store can pass this test and still leave two resets free to overlap. There
+     * is nothing useful to do about that here; a package cannot refuse to boot
+     * over a cache driver. The check is where it belongs.
      */
     private function lock(): ?Lock
     {

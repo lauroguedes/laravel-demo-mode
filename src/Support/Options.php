@@ -48,4 +48,15 @@ final class Options
     {
         return is_numeric($value) ? (int) $value : $default;
     }
+
+    /**
+     * Where a configured redirect actually points.
+     *
+     * 'back' is the one value that is not a URL, and both places that offer a
+     * redirect have to understand it the same way.
+     */
+    public static function redirectTarget(string $redirect): string
+    {
+        return $redirect === 'back' ? url()->previous() : $redirect;
+    }
 }

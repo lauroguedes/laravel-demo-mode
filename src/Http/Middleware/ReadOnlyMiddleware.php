@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Exceptions\DemoWriteProhibited;
 use LauroGuedes\DemoMode\Guards\Blocker;
+use LauroGuedes\DemoMode\Support\Options;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -70,8 +71,7 @@ class ReadOnlyMiddleware
          * sentence learns that it is a demo.
          */
         if ($redirect !== null && ! $request->expectsJson()) {
-            return redirect()->to($redirect === 'back' ? url()->previous() : $redirect)
-                ->with('error', $message);
+            return redirect()->to(Options::redirectTarget($redirect))->with('error', $message);
         }
 
         throw DemoWriteProhibited::readOnly();

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace LauroGuedes\DemoMode\Doctor\Checks;
 
-use Illuminate\Support\Str;
 use LauroGuedes\DemoMode\Cleaners\FlushCache;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Contracts\RunsOnDemosOnly;
@@ -59,12 +58,7 @@ final readonly class CredentialsSurviveTheReset implements RunsOnDemosOnly
 
         $key = $this->keys->credentials();
 
-        /*
-         * Str::is() treats an exact string as a match and translates '*' itself,
-         * so this asks the same question the cleaner answers rather than
-         * re-implementing its pattern rules and drifting from them.
-         */
-        if (Str::is(Options::strings($options['except'] ?? []), $key)) {
+        if ($this->keys->isPreserved($key, Options::strings($options['except'] ?? []))) {
             return [];
         }
 

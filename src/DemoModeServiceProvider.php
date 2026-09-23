@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace LauroGuedes\DemoMode;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule as Scheduler;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use LauroGuedes\DemoMode\Console\CredentialsCommand;
@@ -22,6 +25,8 @@ use LauroGuedes\DemoMode\Credentials\StoreFactory;
 use LauroGuedes\DemoMode\Guards\ConnectionGuard;
 use LauroGuedes\DemoMode\Guards\ModelGuard;
 use LauroGuedes\DemoMode\Guards\ProtectedRecords;
+use LauroGuedes\DemoMode\Http\Controllers\ResetController;
+use LauroGuedes\DemoMode\Http\Middleware\EnsureDemoHost;
 use LauroGuedes\DemoMode\Http\Middleware\ReadOnlyMiddleware;
 use LauroGuedes\DemoMode\Reset\GuardChain;
 use LauroGuedes\DemoMode\Reset\Guards\DemoModeIsEnabled;
@@ -29,6 +34,7 @@ use LauroGuedes\DemoMode\Reset\Guards\EnvironmentIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\HostIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\NotProduction;
 use LauroGuedes\DemoMode\Restrictions\Pipeline as Restrictions;
+use LauroGuedes\DemoMode\Support\Options;
 use LauroGuedes\DemoMode\View\Components\Banner;
 use LauroGuedes\DemoMode\View\Components\Credentials as CredentialsComponent;
 use LauroGuedes\DemoMode\View\Components\Script as ScriptComponent;
@@ -110,6 +116,7 @@ class DemoModeServiceProvider extends ServiceProvider
         $this->app->make(Restrictions::class)->apply();
 
         $this->registerWriteGuards();
+        $this->registerOnDemandReset();
         $this->registerCommands([ResetCommand::class, SnapshotCommand::class]);
         $this->registerSchedule();
     }
@@ -202,6 +209,57 @@ class DemoModeServiceProvider extends ServiceProvider
         $this->app->make(ConnectionGuard::class)->register($this->app->make(DatabaseManager::class));
 
         $this->app->make(Router::class)->aliasMiddleware('demo.readonly', ReadOnlyMiddleware::class);
+    }
+
+    /**
+     * The route that lets a visitor rebuild the demo.
+     *
+     * Registered only when an application asked for it, and with the middleware
+     * it configured — 'web' by default, because that is where CSRF comes from and
+     * without it any page anywhere could rebuild the demo with a form post.
+     *
+     * The rate limiter is named rather than inline so that 'per' can mean
+     * something other than Laravel's default of user-or-IP. Behind a proxy an IP
+     * is only as trustworthy as TrustProxies, which is why 'session' is offered:
+     * it counts a browser instead.
+     */
+    private function registerOnDemandReset(): void
+    {
+        $config = $this->app->make(Configuration::class);
+
+        if (! $config->boolean('on_demand.enabled')) {
+            return;
+        }
+
+        RateLimiter::for('demo-mode-reset', static function (Request $request) use ($config): Limit {
+            $throttle = $config->array('on_demand.throttle');
+
+            $limit = Limit::perMinutes(
+                max(1, Options::integer($throttle['minutes'] ?? null, 60)),
+                max(1, Options::integer($throttle['attempts'] ?? null, 1)),
+            );
+
+            return match ($config->string('on_demand.per', 'ip')) {
+                'global' => $limit->by('demo-mode:global'),
+                'session' => $limit->by($request->hasSession() ? $request->session()->getId() : $request->ip() ?? 'unknown'),
+                default => $limit->by($request->ip() ?? 'unknown'),
+            };
+        });
+
+        $this->app->make(Router::class)
+            ->post($config->string('on_demand.route', '/demo/reset'), ResetController::class)
+            ->middleware([
+                /*
+                 * The host check comes first, ahead of the throttle: a request
+                 * that will be 404'd should not spend a rate-limit slot on the
+                 * way there, or one request with a forged Host header takes the
+                 * reset button away from every real visitor.
+                 */
+                EnsureDemoHost::class,
+                ...$config->strings('on_demand.middleware'),
+                'throttle:demo-mode-reset',
+            ])
+            ->name($config->string('on_demand.name', 'demo.reset'));
     }
 
     /**

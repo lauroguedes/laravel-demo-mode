@@ -20,6 +20,23 @@ A reset runs `migrate:fresh`. Every one of these must be satisfied first.
 | 5 | Interactive confirmation | `--force`. This is the only barrier `--force` touches. A non-interactive run without `--force` refuses. |
 | 6 | The reset lock | Nothing. Two concurrent rebuilds of one database is how you get half a schema. |
 
+### The on-demand route
+
+`demo.on_demand.enabled` puts a `migrate:fresh` behind an HTTP request. Off by
+default. When it is on, `demo:doctor` errors if the middleware list has no `web`
+in it — without CSRF, any page on the internet can rebuild the demo with a form
+post — and warns when there is no cooldown or when a "queued" rebuild would run
+inline anyway. See [on-demand-reset.md](on-demand-reset.md).
+
+The host is checked against the request, not only `APP_URL`, and in middleware
+ahead of the throttle — otherwise a request with a forged `Host` header spends a
+rate-limit slot on its way to the 404, which with `per => 'global'` takes the
+reset button away from every real visitor. A refusal says nothing about why.
+
+**The reset lock is only as real as your cache store.** `CACHE_STORE=null` grants
+every lock to everybody and `array` keeps them inside one process, so either
+leaves two rebuilds free to overlap. `demo:doctor` reports both.
+
 ### What `--force` means
 
 It skips the confirmation prompt. That is the entire list.

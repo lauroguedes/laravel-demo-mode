@@ -22,10 +22,10 @@ use LauroGuedes\DemoMode\Events\ResetFailed;
 use LauroGuedes\DemoMode\Events\ResetStarting;
 use LauroGuedes\DemoMode\Exceptions\ResetInProgress;
 use LauroGuedes\DemoMode\Exceptions\ResetRefused;
-use LauroGuedes\DemoMode\Guards\ConnectionGuard;
 use LauroGuedes\DemoMode\Sandbox\Sandbox as SandboxModel;
 use LauroGuedes\DemoMode\Support\CacheKeys;
 use LauroGuedes\DemoMode\Support\DestructiveCommands;
+use LauroGuedes\DemoMode\Support\ResetWindow;
 use Throwable;
 
 /**
@@ -115,14 +115,11 @@ final readonly class Runner
 
         try {
             /*
-             * The whole run, not just the strategy. A reset drops and recreates
-             * every application table and then the cleaners write to sessions,
-             * cache and queues — none of which the connection guard's exception
-             * list covers, because that list is about what a visitor's request
-             * legitimately touches. Without this the guard refused the first
-             * statement of every reset and the demo could never rebuild.
+             * The whole run, not just the strategy: the guards that have to stand
+             * down are about what a visitor's request may touch, and a rebuild is
+             * not a visitor's request. Support\ResetWindow says which and why.
              */
-            return ConnectionGuard::permitting(fn (): ResetReport => $this->execute($strategy, $options, $write));
+            return ResetWindow::during(fn (): ResetReport => $this->execute($strategy, $options, $write));
         } finally {
             $lock?->release();
         }

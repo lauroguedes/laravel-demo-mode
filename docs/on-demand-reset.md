@@ -93,6 +93,15 @@ two.
 `demo:doctor` warns when `queue` is true but `QUEUE_CONNECTION` is `sync`, which
 runs it inline anyway.
 
+**On Octane there is a second reason to queue it.** A reset stands the connection
+and protected-record guards down for its duration, and that window is a flag in
+the PHP process rather than something scoped to one request. Under PHP-FPM, or in
+a queue worker, the process is doing nothing else and the distinction does not
+arise. On a coroutine-based Octane worker running the reset *inline*, the
+rebuild's database round-trips yield, and another request that worker picks up
+runs inside the open window. Queued — the default — the reset happens in a worker
+process that serves no requests at all.
+
 ## The lock is only as real as your cache store
 
 The Runner takes a lock so two rebuilds cannot overlap, and it lives in the

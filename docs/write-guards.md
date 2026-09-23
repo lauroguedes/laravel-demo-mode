@@ -36,10 +36,18 @@ visitor rename the published account to something else and then own a record
 that no longer matches.
 
 Creation is not guarded. A record that does not exist yet is not the protected
-record — it is your seeder making one, and a guard that blocked that would fail
-on the demo's own first reset. The remaining gap is a visitor creating a *second*
-row claiming the same identity; a unique index on the matched attribute closes
-it, and any application publishing credentials by email already has one.
+record — it is your seeder making one. The remaining gap is a visitor creating a
+*second* row claiming the same identity; a unique index on the matched attribute
+closes it, and any application publishing credentials by email already has one.
+
+**And the reset is exempt**, the same way the connection guard is. Skipping
+creates is not enough on its own: a seeder that creates the account and then
+saves it again — verifying the address, assigning a role, filling in a profile —
+is writing to a record that by then exists. That is the ordinary shape of a
+seeder in any application that creates users through a service class rather than
+a factory, and without the exemption the guard refused the rebuild of every demo
+whose published account took more than one insert. The Runner lifts it for the
+duration of a reset and no longer.
 
 ### What it does not catch
 

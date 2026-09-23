@@ -17,7 +17,9 @@ use LauroGuedes\DemoMode\Facades\Demo;
 use LauroGuedes\DemoMode\Guards\ConnectionGuard;
 use LauroGuedes\DemoMode\Support\DestructiveCommands;
 use LauroGuedes\DemoMode\Tests\Fixtures\SpyStrategy;
+use Workbench\App\Models\DemoUser;
 use Workbench\Database\Seeders\DemoSeeder;
+use Workbench\Database\Seeders\TwoSaveSeeder;
 
 /**
  * The reset the specification calls mandatory: a whole application, demo on,
@@ -175,4 +177,33 @@ it('puts the sandbox table back when a strategy drops it', function (): void {
     expect(Schema::hasTable('demo_sandboxes'))->toBeTrue();
 
     @unlink($path);
+});
+
+/**
+ * The same failure as the connection guard, one layer up, and it took installing
+ * the package into a real application to find: the protected-record guard
+ * refused the seeder that creates the record it protects.
+ *
+ * Skipping creates covered a seeder that inserts once. It did not cover the
+ * ordinary case — create the account, then save it again to verify the address or
+ * assign a role — because by the second save the record exists. The demo seeded,
+ * reported success on the seeding step, and then failed the reset.
+ */
+it('still rebuilds when the seeder saves the protected record twice', function (): void {
+    demo([
+        'demo.reset.maintenance' => false,
+        'demo.reset.strategies.migrate-fresh-seed.seeder' => TwoSaveSeeder::class,
+        'demo.cleaners' => [],
+        'demo.guards.protected' => [DemoUser::class => ['email' => 'admin@demo.test']],
+    ]);
+
+    app('migrator')->path(__DIR__.'/../../workbench/database/migrations');
+
+    $this->artisan('demo:reset', ['--force' => true])->assertSuccessful();
+
+    expect(DemoUser::where('email', 'admin@demo.test')->count())->toBe(1);
+
+    /* And the guard is back on the moment the reset finishes. */
+    expect(fn (): mixed => DemoUser::where('email', 'admin@demo.test')->first()?->forceFill(['email' => 'visitor@demo.test'])->save())
+        ->toThrow(DemoWriteProhibited::class);
 });

@@ -6,6 +6,7 @@ namespace LauroGuedes\DemoMode\Guards;
 
 use Illuminate\Database\Eloquent\Model;
 use LauroGuedes\DemoMode\Exceptions\DemoWriteProhibited;
+use LauroGuedes\DemoMode\Support\ResetWindow;
 
 /**
  * The layer that keeps the published account usable.
@@ -54,7 +55,6 @@ final readonly class ModelGuard
      *
      * A record that does not exist yet is not the protected record — it is the
      * seeder making one, which is the whole reason there is something to protect.
-     * Guarding creates would mean the first reset failed on its own seeder.
      *
      * What this does still catch is a visitor renaming some other record *into*
      * the protected identity, because that record exists and its incoming values
@@ -88,6 +88,14 @@ final readonly class ModelGuard
 
     private function guard(Model $model, string $reason): void
     {
+        /*
+         * The reset is the one writer allowed to touch this record — it is what
+         * creates it. Skipping creates alone was not enough: see ResetWindow.
+         */
+        if (ResetWindow::isOpen()) {
+            return;
+        }
+
         if (! $this->protected->matches($model)) {
             return;
         }

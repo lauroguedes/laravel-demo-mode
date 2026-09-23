@@ -8,6 +8,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Exceptions\DemoWriteProhibited;
+use LauroGuedes\DemoMode\Support\ResetWindow;
 
 /**
  * The last layer, and the one to reach for last.
@@ -31,11 +32,10 @@ use LauroGuedes\DemoMode\Exceptions\DemoWriteProhibited;
  * recreates every application table, none of which is ever on the exception list
  * — so with this guard on and nothing to lift it, the first statement of every
  * reset was refused and the demo could never rebuild again. Nothing announced
- * that: the scheduler failed quietly every six hours. The Runner wraps itself in
- * permitting() for exactly the same reason it lifts Laravel's own destructive
- * command prohibition, and for exactly the same duration.
+ * that: the scheduler failed quietly every six hours. It stands down inside
+ * Support\ResetWindow, which the Runner opens for the whole rebuild.
  */
-final class ConnectionGuard
+final readonly class ConnectionGuard
 {
     /**
      * Statements that read. Everything else is treated as a write, which is the
@@ -56,38 +56,10 @@ final class ConnectionGuard
      */
     private const array WRITE_KEYWORDS = ['insert', 'update', 'delete', 'merge', 'truncate', 'replace', 'drop', 'alter', 'create'];
 
-    /**
-     * Whether the reset currently running is exempt.
-     *
-     * Static because the guard is a closure bound to the connection at boot and
-     * the Runner has no reference to it — the same shape, and the same
-     * justification, as Support\DestructiveCommands.
-     */
-    private static bool $permitting = false;
-
     public function __construct(
-        private readonly Configuration $config,
-        private readonly Blocker $blocker,
+        private Configuration $config,
+        private Blocker $blocker,
     ) {}
-
-    /**
-     * Run the callback with the connection guard lifted.
-     *
-     * @template TReturn
-     *
-     * @param  callable(): TReturn  $callback
-     * @return TReturn
-     */
-    public static function permitting(callable $callback): mixed
-    {
-        self::$permitting = true;
-
-        try {
-            return $callback();
-        } finally {
-            self::$permitting = false;
-        }
-    }
 
     public function register(DatabaseManager $database): void
     {
@@ -109,7 +81,7 @@ final class ConnectionGuard
      */
     public function inspect(string $query, array $except): void
     {
-        if (self::$permitting) {
+        if (ResetWindow::isOpen()) {
             return;
         }
 

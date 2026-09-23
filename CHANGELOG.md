@@ -5,6 +5,30 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.2 - 2026-09-23
+
+### Fixed
+
+- **A demo whose protected account took more than one insert could not rebuild.**
+  The protected-record guard skipped creates, so a seeder that inserts the
+  account once was fine — but a seeder that creates it and then saves it again to
+  verify the address or assign a role was writing to a record that by then
+  existed, and the guard refused it. The reset reported the seeding step as done
+  and then failed. Any application that creates users through a service class
+  rather than a factory does this, which is most of them.
+
+  The reset now stands that guard down for its own duration, the way it already
+  did for the connection guard.
+
+### Changed
+
+- Both guards read one `Support\ResetWindow` rather than carrying a static flag
+  each, so there is one answer to "is the reset the thing writing" instead of two
+  that could drift apart. Laravel's destructive-command prohibition keeps its own
+  narrower window on purpose, and `ResetWindow` says why.
+- `docs/on-demand-reset.md` explains why an inline reset on a coroutine-based
+  Octane worker is a second reason to keep the on-demand reset queued.
+
 ## 1.0.1 - 2026-09-23
 
 Everything here came from installing 1.0.0 into a real project rather than a

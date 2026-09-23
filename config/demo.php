@@ -259,10 +259,80 @@ return [
 
     'guards' => [
 
+        /*
+         | Records a visitor may not change. This is the emptiest default here
+         | that you should probably fill in: if a visitor can change the
+         | published account's email or password, the next visitor cannot get in,
+         | and on a six-hour cycle the demo is closed for up to six hours.
+         |
+         | A map of attributes that all have to match, or a Closure(Model): bool.
+         | Both the stored values and the incoming ones are checked, so a visitor
+         | cannot edit their way out of the rule.
+         */
         'protected' => [
             // \App\Models\User::class => ['email' => 'admin@demo.test'],
         ],
 
+        /*
+         | A demo nobody can write to. Off by default: a playground exists to be
+         | written to, and a read-only demo demonstrates less.
+         |
+         | 'except' is by route name, because a URL is not a stable thing to
+         | write in a config file — which also means a route with no name cannot
+         | be excepted and will be blocked.
+         |
+         | 'redirect' sends a refused write back with a flashed 'error' message
+         | instead of rendering 403. Use 'back', a path, or null for the 403.
+         */
+        'read_only' => [
+            'enabled' => (bool) env('DEMO_READ_ONLY', false),
+            'except' => ['login', 'logout', 'register', 'password.request', 'demo.reset'],
+
+            /*
+             | Null blocks anything that is not a known-safe method, which is the
+             | reading with nothing to get wrong. Naming methods narrows it, and
+             | then the list is yours to keep complete — Laravel honours
+             | _method overrides, so a short list is a list to step around.
+             */
+            'methods' => null,
+
+            'redirect' => null,
+        ],
+
+        /*
+         | Rejects writes at the connection, where nothing can route around them.
+         |
+         | Off by default and genuinely dangerous: the false positives are not
+         | edge cases, they are the framework working normally. Database-backed
+         | sessions, cache, queues, job batches and failed jobs all write on
+         | ordinary requests, and every one has to be listed here before the demo
+         | can serve a page. Reach for read_only and protected first.
+         */
+        'connection' => [
+            'enabled' => false,
+            'except_tables' => [
+                'sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs',
+                'password_reset_tokens', 'demo_sandboxes',
+            ],
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logging
+    |--------------------------------------------------------------------------
+    |
+    | Every blocked write dispatches a WriteBlocked event whatever this says.
+    | The log line is separate because a misconfigured connection guard blocks
+    | every request, and a package that filled your log aggregator by default
+    | would be teaching you to turn the whole thing off.
+    |
+    */
+
+    'log' => [
+        'channel' => env('DEMO_LOG_CHANNEL'),
+        'blocked_writes' => true,
     ],
 
     /*

@@ -20,5 +20,10 @@ return new class extends Migration
             $table->id();
             $table->string('title');
         });
+
+        Schema::create('demo_widgets', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+        });
     }
 };

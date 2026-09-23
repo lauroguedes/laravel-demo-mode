@@ -8,6 +8,7 @@ use LauroGuedes\DemoMode\Cleaners\FlushCache;
 use LauroGuedes\DemoMode\Doctor\Doctor;
 use LauroGuedes\DemoMode\Doctor\Finding;
 use LauroGuedes\DemoMode\Restrictions\DisableMail;
+use Workbench\App\Models\DemoUser;
 
 function findings(): array
 {
@@ -25,7 +26,7 @@ it('finds nothing wrong with a demo that is set up properly', function (): void 
         'demo.allowed_hosts' => ['demo.example.com'],
         'app.url' => 'https://demo.example.com',
         'demo.reset.strategies.migrate-fresh-seed.seeder' => Seeder::class,
-        'demo.guards.protected' => [stdClass::class => ['email' => 'admin@demo.test']],
+        'demo.guards.protected' => [DemoUser::class => ['email' => 'admin@demo.test']],
         databaseNameKey() => 'demo_playground',
     ]);
 
@@ -155,4 +156,41 @@ it('prints JSON a pipeline can read', function (): void {
     demo(['demo.environments' => ['nowhere']]);
 
     $this->artisan('demo:doctor', ['--json' => true])->assertFailed();
+});
+
+/**
+ * With this guard on and a database session driver, the demo answers 403 to its
+ * own framework on the first request — which reads like the guard working
+ * rather than the guard misconfigured.
+ */
+it('errors when the connection guard would block the framework itself', function (): void {
+    demo([
+        'demo.guards.connection.enabled' => true,
+        'demo.guards.connection.except_tables' => [],
+        'session.driver' => 'database',
+    ]);
+
+    expect(findings())->toContain('connection-guard:error');
+});
+
+it('says nothing when the tables the framework writes to are excepted', function (): void {
+    demo([
+        'demo.guards.connection.enabled' => true,
+        'demo.guards.connection.except_tables' => ['sessions'],
+        'session.driver' => 'database',
+    ]);
+
+    expect(findings())->not->toContain('connection-guard:error');
+});
+
+it('says nothing about tables this application does not keep in the database', function (): void {
+    demo([
+        'demo.guards.connection.enabled' => true,
+        'demo.guards.connection.except_tables' => [],
+        'session.driver' => 'file',
+        'cache.default' => 'array',
+        'queue.default' => 'sync',
+    ]);
+
+    expect(findings())->not->toContain('connection-guard:error');
 });

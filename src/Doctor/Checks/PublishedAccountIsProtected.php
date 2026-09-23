@@ -7,6 +7,8 @@ namespace LauroGuedes\DemoMode\Doctor\Checks;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Contracts\RunsOnDemosOnly;
 use LauroGuedes\DemoMode\Doctor\Finding;
+use LauroGuedes\DemoMode\Exceptions\InvalidConfiguration;
+use LauroGuedes\DemoMode\Guards\ProtectedRecords;
 
 /**
  * Somebody has to stop the first visitor locking everybody else out.
@@ -23,7 +25,10 @@ use LauroGuedes\DemoMode\Doctor\Finding;
  */
 final readonly class PublishedAccountIsProtected implements RunsOnDemosOnly
 {
-    public function __construct(private Configuration $config) {}
+    public function __construct(
+        private Configuration $config,
+        private ProtectedRecords $protected,
+    ) {}
 
     public function run(): array
     {
@@ -31,7 +36,18 @@ final readonly class PublishedAccountIsProtected implements RunsOnDemosOnly
             return [];
         }
 
-        if ($this->config->array('guards.protected') !== []) {
+        try {
+            $models = $this->protected->models();
+        } catch (InvalidConfiguration $e) {
+            /*
+             * Reported rather than thrown, because this command is where a
+             * demo's configuration is meant to be examined. Letting it crash
+             * would mean the one tool for finding the problem could not run.
+             */
+            return [Finding::error('protected-accounts', $e->getMessage())];
+        }
+
+        if ($models !== []) {
             return [];
         }
 

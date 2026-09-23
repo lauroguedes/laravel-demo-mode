@@ -6,6 +6,8 @@ namespace LauroGuedes\DemoMode;
 
 use Illuminate\Console\Scheduling\Schedule as Scheduler;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use LauroGuedes\DemoMode\Console\CredentialsCommand;
@@ -17,6 +19,10 @@ use LauroGuedes\DemoMode\Console\StatusCommand;
 use LauroGuedes\DemoMode\Contracts\CredentialStore;
 use LauroGuedes\DemoMode\Credentials\Manager as Credentials;
 use LauroGuedes\DemoMode\Credentials\StoreFactory;
+use LauroGuedes\DemoMode\Guards\ConnectionGuard;
+use LauroGuedes\DemoMode\Guards\ModelGuard;
+use LauroGuedes\DemoMode\Guards\ProtectedRecords;
+use LauroGuedes\DemoMode\Http\Middleware\ReadOnlyMiddleware;
 use LauroGuedes\DemoMode\Reset\GuardChain;
 use LauroGuedes\DemoMode\Reset\Guards\DemoModeIsEnabled;
 use LauroGuedes\DemoMode\Reset\Guards\EnvironmentIsAllowed;
@@ -103,6 +109,7 @@ class DemoModeServiceProvider extends ServiceProvider
 
         $this->app->make(Restrictions::class)->apply();
 
+        $this->registerWriteGuards();
         $this->registerCommands([ResetCommand::class, SnapshotCommand::class]);
         $this->registerSchedule();
     }
@@ -176,6 +183,25 @@ class DemoModeServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands($commands);
         }
+    }
+
+    /**
+     * The two write guards that register themselves.
+     *
+     * The read-only middleware is not one of them: it gets an alias so an
+     * application can put it where its own stack needs it, because a package
+     * that pushed itself into the web group would be deciding an ordering that
+     * depends on somebody else's session and auth middleware.
+     */
+    private function registerWriteGuards(): void
+    {
+        foreach ($this->app->make(ProtectedRecords::class)->models() as $model) {
+            $model::observe(ModelGuard::class);
+        }
+
+        $this->app->make(ConnectionGuard::class)->register($this->app->make(DatabaseManager::class));
+
+        $this->app->make(Router::class)->aliasMiddleware('demo.readonly', ReadOnlyMiddleware::class);
     }
 
     /**

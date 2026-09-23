@@ -11,6 +11,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  */
 class DemoUser extends Authenticatable
 {
+    public $timestamps = false;
+
     protected $table = 'demo_users';
 
     protected $guarded = [];

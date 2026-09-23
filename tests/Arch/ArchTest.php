@@ -12,6 +12,7 @@ use LauroGuedes\DemoMode\Contracts\ResetStrategy;
 use LauroGuedes\DemoMode\Contracts\Restriction;
 use LauroGuedes\DemoMode\Credentials\Credential;
 use LauroGuedes\DemoMode\DemoModeServiceProvider;
+use LauroGuedes\DemoMode\Doctor\Doctor;
 use LauroGuedes\DemoMode\Exceptions\DemoModeException;
 use LauroGuedes\DemoMode\Reset\Runner;
 use LauroGuedes\DemoMode\Reset\Strategies\MigrateFreshSeed;
@@ -99,6 +100,23 @@ arch('every restriction implements the contract')
     ->expect('LauroGuedes\DemoMode\Restrictions')
     ->toImplement(Restriction::class)
     ->ignoring(Pipeline::class);
+
+/**
+ * A check that is not in Doctor::CHECKS reports nothing while looking like it
+ * works. Two of them shipped that way before this test existed.
+ */
+test('every doctor check is registered', function (): void {
+    $registered = Doctor::shipped();
+
+    $files = glob(__DIR__.'/../../src/Doctor/Checks/*.php') ?: [];
+
+    $written = array_map(
+        static fn (string $file): string => 'LauroGuedes\\DemoMode\\Doctor\\Checks\\'.basename($file, '.php'),
+        $files,
+    );
+
+    expect(array_values(array_diff($written, $registered)))->toBe([]);
+});
 
 arch('every doctor check implements the contract')
     ->expect('LauroGuedes\DemoMode\Doctor\Checks')

@@ -8,12 +8,14 @@ use Illuminate\Contracts\Container\Container;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Contracts\DoctorCheck;
 use LauroGuedes\DemoMode\Contracts\RunsOnDemosOnly;
+use LauroGuedes\DemoMode\Doctor\Checks\ConnectionGuardIsSurvivable;
 use LauroGuedes\DemoMode\Doctor\Checks\CredentialsAreNotPublic;
 use LauroGuedes\DemoMode\Doctor\Checks\CredentialsSurviveTheReset;
 use LauroGuedes\DemoMode\Doctor\Checks\DatabaseLooksDisposable;
 use LauroGuedes\DemoMode\Doctor\Checks\GuardsWouldPass;
 use LauroGuedes\DemoMode\Doctor\Checks\MailIsContained;
 use LauroGuedes\DemoMode\Doctor\Checks\PublishedAccountIsProtected;
+use LauroGuedes\DemoMode\Doctor\Checks\RotationCanTakeEffect;
 use LauroGuedes\DemoMode\Doctor\Checks\ScheduleIsReadable;
 use LauroGuedes\DemoMode\Doctor\Checks\StrategyIsUsable;
 use LauroGuedes\DemoMode\Exceptions\InvalidConfiguration;
@@ -46,6 +48,8 @@ final class Doctor
         CredentialsSurviveTheReset::class,
         MailIsContained::class,
         PublishedAccountIsProtected::class,
+        RotationCanTakeEffect::class,
+        ConnectionGuardIsSurvivable::class,
         DatabaseLooksDisposable::class,
     ];
 
@@ -70,6 +74,21 @@ final class Doctor
     public static function flush(): void
     {
         self::$additional = [];
+    }
+
+    /**
+     * Every check this package ships.
+     *
+     * An arch test asserts this list covers the Checks namespace, because two of
+     * them have already been written, tested in isolation and never registered —
+     * a check that is not in this array is a check that reports nothing while
+     * looking like it works.
+     *
+     * @return list<class-string<DoctorCheck>>
+     */
+    public static function shipped(): array
+    {
+        return self::CHECKS;
     }
 
     /**

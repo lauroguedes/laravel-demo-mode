@@ -110,10 +110,16 @@ network, demo mode does not stop it unless you write a `Restriction` that does.
 `DisableMail` and `DisableNotifications` cover the two most common cases and
 nothing else.
 
-**Write guards are not in this release yet.** `guards.protected` is read by
-`demo:doctor`, which warns when it is empty, and enforcement lands with the write
-guards. Until then, assume anything a signed-in visitor can reach, they can
-change — including the published account.
+**Write guards are opt-in, and one of them is not optional in practice.** Set
+`guards.protected` for the published account, or a visitor can change its email
+or password and lock every later visitor out until the next reset. See
+[write-guards.md](write-guards.md). Everything else a signed-in visitor can
+reach, they can change — that is what a playground is.
+
+The model guard hooks Eloquent events, so it does not see `Model::where(…)
+->update()`, `DB::table()->update()`, or anything wrapped in `withoutEvents()`.
+A visitor cannot choose those paths, but your own code can; the list is in
+[write-guards.md](write-guards.md).
 
 **Isolation is not multi-tenancy.** Everyone shares one dataset today. When the
 scoped sandbox driver lands it will keep ordinary visitors out of each other's

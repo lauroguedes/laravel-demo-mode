@@ -85,6 +85,7 @@ props. See [docs/frontend.md](docs/frontend.md).
 | `demo:status` | What this installation currently is |
 | `demo:doctor` | Audit the configuration. Non-zero exit on anything dangerous |
 | `demo:credentials` | Show, or `--rotate`, the published passwords |
+| `demo:snapshot` | Capture the baseline the snapshot strategy restores |
 
 ## What it is not
 

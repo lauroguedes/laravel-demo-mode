@@ -171,6 +171,25 @@ class DemoMode
     }
 
     /**
+     * The published password for one address, for a seeder to hash.
+     *
+     * Null when this is not a demo, when nothing has been published yet, or when
+     * that address is not one of the published accounts — so a seeder writes
+     *
+     *     bcrypt(Demo::passwordFor($email) ?? 'password')
+     *
+     * and keeps working when it is run on its own. That matters more than it
+     * looks: the first thing anybody does after writing a seeder is run
+     * 'db:seed', long before the first reset exists to stage anything, and a
+     * seeder that only works inside a reset is a seeder that fails the first
+     * time it is used.
+     */
+    public function passwordFor(string $email): ?string
+    {
+        return $this->credentialManager()->passwordFor($email);
+    }
+
+    /**
      * Every published account.
      *
      * @return list<array{email: string, password: string, label: string|null, primary: bool}>

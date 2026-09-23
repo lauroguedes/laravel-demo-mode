@@ -76,24 +76,6 @@ Demo::toArray();        // one payload for Blade, Livewire and Inertia
 For Inertia, add `ShareDemoState` to the web group and read `demo` from the page
 props. See [docs/frontend.md](docs/frontend.md).
 
-## Commands
-
-| Command | What it does |
-|---|---|
-| `demo:install` | Publish the config and the seeder stub |
-| `demo:reset` | Rebuild the demonstration data. `--dry-run` prints the plan |
-| `demo:status` | What this installation currently is |
-| `demo:doctor` | Audit the configuration. Non-zero exit on anything dangerous |
-| `demo:credentials` | Show, or `--rotate`, the published passwords |
-| `demo:snapshot` | Capture the baseline the snapshot strategy restores |
-
-## What it is not
-
-- **Password-protecting a work in progress.** That is `php artisan down --secret`.
-- **Backup and restore.** That is `spatie/laravel-backup`.
-- **A demo data generator.** The seeder is yours; the package runs it.
-- **Multi-tenancy.** Visitor isolation is deliberately ephemeral and disposable.
-
 ## Letting visitors reset it
 
 ```php
@@ -113,10 +95,32 @@ cooled down, queued, CSRF-protected and host-checked; see
 Each visitor gets the seeded baseline plus what they created. Not multi-tenancy
 and not a security boundary; see [docs/sandbox.md](docs/sandbox.md).
 
+## Commands
+
+| Command | What it does |
+|---|---|
+| `demo:install` | Publish the config and the seeder stub |
+| `demo:reset` | Rebuild the demonstration data. `--dry-run` prints the plan |
+| `demo:status` | What this installation currently is |
+| `demo:doctor` | Audit the configuration. Non-zero exit on anything dangerous |
+| `demo:credentials` | Show, or `--rotate`, the published passwords |
+| `demo:snapshot` | Capture the baseline the snapshot strategy restores |
+| `demo:sandbox:prune` | Remove the sandboxes nobody came back to |
+
+## What it is not
+
+- **Password-protecting a work in progress.** That is `php artisan down --secret`.
+- **Backup and restore.** That is `spatie/laravel-backup`.
+- **A demo data generator.** The seeder is yours; the package runs it.
+- **Multi-tenancy.** Visitor isolation is deliberately ephemeral and disposable.
+
 ## Documentation
 
-Full documentation is in [`docs/`](docs). Start with
+Full documentation is in [`docs/`](docs/README.md). Start with
 [security.md](docs/security.md) — it is the one that is not optional.
+
+Already have a hand-rolled demo mode? [UPGRADE.md](UPGRADE.md) is mostly a list of
+things to delete.
 
 ## Testing
 

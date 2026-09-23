@@ -21,17 +21,26 @@ use LauroGuedes\DemoMode\Facades\Demo;
  * message bodies, uploaded files. Faker output is fine. A dump of real data with
  * the emails changed is not, and it is the most common way a demo leaks something.
  *
- * The published password comes from Demo::credentials(), which the reset rotates
- * just after this runs. Reading it here rather than hardcoding one is what keeps
- * the login page and the database in agreement.
+ * The published password comes from Demo::passwordFor(), which the reset stages
+ * just before this runs. Reading it here rather than hardcoding one is what keeps
+ * the login page and the database in agreement without either side knowing the
+ * value.
+ *
+ * Note the fallback. Outside a reset there is nothing staged, and 'db:seed' on
+ * its own is the first thing anybody runs — so the fallback is what stops this
+ * seeder failing the first time it is used. Pick something you do not mind
+ * appearing in a local database.
  */
 class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        // $email = config('demo.credentials.accounts.0.email');
+        //
         // \App\Models\User::factory()->create([
-        //     'email' => config('demo.credentials.accounts.0.email'),
+        //     'email' => $email,
         //     'name' => 'Demo Administrator',
+        //     'password' => bcrypt(Demo::passwordFor($email) ?? 'password'),
         // ]);
     }
 }

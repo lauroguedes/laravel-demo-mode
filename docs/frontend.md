@@ -81,7 +81,7 @@ const { demo } = usePage().props
 //   next_reset_at: '2026-09-22T18:00:00+00:00',
 //   resets_in:     '2 hours',
 //   last_reset_at: '2026-09-22T12:00:00+00:00',
-//   credentials:   { email: 'admin@demo.test', password: 'Xk93mPq2Lr8v', label: 'Administrator', primary: true },
+//   credentials:   { email: 'admin@demo.test', password: 'Xk93mPq2Lr8v', label: 'Administrator' },
 //   accounts:      [ /* every published account, same shape */ ],
 //   banner:        { message: '…', variant: 'warning', class: 'alert alert-warning',
 //                    dismissible: true, position: 'top', next_reset_at: '…' },
@@ -95,7 +95,9 @@ also nullable and worth guarding: `banner` is `null` when `banner.enabled` is
 false, and `credentials` is `null` when `expose_in_payload` is off.
 
 `credentials` is the one account a form should prefill; `accounts` is all of them,
-which is what `<x-demo-credentials />` lists. Both come from the same resolved
+which is what `<x-demo-credentials />` lists. Only the `accounts` entries carry a
+`primary` flag — the singular object is already the primary one, so it does not
+repeat it. Both come from the same resolved
 state the Blade components use — `banner.class` is the variant already resolved
 against `banner.classes`, so there is no lookup rule to reimplement on the client.
 

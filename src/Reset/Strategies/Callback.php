@@ -23,10 +23,10 @@ use LauroGuedes\DemoMode\Reset\ResetContext;
  *
  * Write it as a callable string or a [Class::class, 'method'] pair rather than a
  * Closure. A Closure in config/demo.php makes 'php artisan config:cache' fail
- * outright — "Your configuration files are not serializable" — which rules it
- * out on every deployment that caches config, which is every demo server worth
- * having. A string is also the form validate() can check before the reset rather
- * than after it.
+ * outright — Laravel refuses to serialise it and names this very key — which
+ * rules it out on every deployment that caches config, which is every demo
+ * server worth having. A string is also the form validate() can check before the
+ * reset rather than after it.
  */
 final readonly class Callback implements ResetStrategy
 {

@@ -22,6 +22,7 @@ use LauroGuedes\DemoMode\Reset\Schedule;
  * @method static CarbonInterval|null timeUntilReset()
  * @method static ResetReport reset(array{strategy?: string, seeder?: string, maintenance?: bool, dry-run?: bool} $options = [], Closure|null $output = null)
  * @method static array{email: string, password: string, label: string|null}|null credentials()
+ * @method static string|null passwordFor(string $email)
  * @method static list<array{email: string, password: string, label: string|null, primary: bool}> allCredentials()
  * @method static list<array{email: string, password: string, label: string|null, primary: bool}> rotate()
  * @method static array<string, mixed> toArray()

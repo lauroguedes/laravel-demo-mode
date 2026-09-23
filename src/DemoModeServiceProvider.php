@@ -290,9 +290,9 @@ class DemoModeServiceProvider extends ServiceProvider
      *
      * The middleware is an alias rather than something pushed into the web group,
      * because it has to run after the session middleware and that ordering is the
-     * application's to state. The Manager resolves a sandbox on first use anyway,
-     * so what the middleware adds is the expiry renewal — the difference between
-     * a TTL and a deadline.
+     * application's to state. A sandbox is created the moment a visitor first
+     * writes something with or without the middleware, so what it adds is the
+     * expiry renewal — the difference between a TTL and a deadline.
      */
     private function registerSandbox(): void
     {

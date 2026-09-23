@@ -12,7 +12,8 @@ reads.
 
 ```php
 Demo::credentials();     // ['email' => …, 'password' => …, 'label' => …]
-Demo::allCredentials();  // every published account
+Demo::allCredentials();  // every published account, each with a 'primary' flag
+Demo::passwordFor($email);  // just the password, or null — what a seeder wants
 Demo::rotate();          // new passwords now, without rebuilding the data
 ```
 
@@ -25,20 +26,25 @@ Demo::rotate();          // new passwords now, without rebuilding the data
 ```php
 User::factory()->create([
     'email'    => 'admin@demo.test',
-    'password' => bcrypt(Demo::credentials()['password']),
+    'password' => bcrypt(Demo::passwordFor('admin@demo.test') ?? 'password'),
 ]);
 ```
 
-The reset generates the password just before the seeder runs and writes it to the
-store just after the cleaners, so `Demo::credentials()` inside a seeder returns
+The reset stages the password just before the seeder runs and writes it to the
+store just after the cleaners, so `Demo::passwordFor()` inside a seeder returns
 the value that is about to be published.
 
-That split is not incidental. Generating after the cleaners would mean the seeder
-hashed the *previous* password, and the login page would show credentials that do
-not open the account they name. Generating and publishing before them would mean
-the cache cleaner erased what was just written. Both failures are completely
-silent — which is why the package does it in two steps and `demo:doctor` checks
-the second one.
+That split — staged before the seeder, written after the cleaners — is not
+incidental. Generating after the cleaners would mean the seeder hashed the
+*previous* password, and the login page would show credentials that do not open
+the account they name. Generating and publishing before them would mean the cache
+cleaner erased what was just written. Both failures are completely silent, which
+is why the package does it in two steps and `demo:doctor` checks the second one.
+
+**Keep the fallback.** Outside a reset there is nothing staged and the method
+answers `null` — and `php artisan db:seed` on its own is the first thing you will
+run, long before the first reset exists. Without it the seeder fails the first
+time you use it.
 
 ## The two bounds that make this safe enough
 
@@ -102,5 +108,6 @@ account's email or password, the next visitor cannot get in:
 ],
 ```
 
-`demo:doctor` warns when this is empty. Enforcement arrives with the write
-guards; until then the warning is the whole of the protection.
+`demo:doctor` warns when this is empty. See [write-guards.md](write-guards.md) for
+what the guard does and does not catch — it hooks Eloquent events, so it does not
+see a bulk `Model::where(…)->update()` or a raw `DB::table()` write.

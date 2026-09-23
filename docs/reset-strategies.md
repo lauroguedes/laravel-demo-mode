@@ -157,10 +157,16 @@ the same way.
 
 **Write it as a callable string or a `[Class::class, 'method']` pair, not a
 Closure.** A Closure in `config/demo.php` makes `php artisan config:cache` fail
-outright — *"Your configuration files are not serializable"* — which rules it out
-on every deployment that caches config, which is every demo server worth having.
-A string is also the form `validate()` can check before the reset rather than
-after it.
+outright:
+
+```
+Your configuration files could not be serialized because the value at
+"demo.reset.strategies.callback.using" is non-serializable.
+```
+
+That rules a Closure out on every deployment that caches config, which is every
+demo server worth having. A string is also the form `validate()` can check before
+the reset rather than after it.
 
 A callback with nothing configured **throws**. Falling through would have the
 Runner record a completed reset, publish credentials and dispatch

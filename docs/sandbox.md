@@ -75,9 +75,11 @@ session, so a route without one is unscoped.
 $middleware->web(append: ['demo.sandbox']);
 ```
 
-The middleware is optional: a sandbox is resolved on first use anyway. What it
-adds is pushing the expiry out on every request, which is the difference between
-a TTL and a deadline.
+The middleware is optional: a sandbox is created the moment a visitor first writes
+something, with or without it. What it adds is pushing the expiry out on every
+request, which is the difference between a TTL and a deadline — without it a
+sandbox is pruned an hour after it was created rather than an hour after its
+visitor stopped using it.
 
 ## When a sandbox is created
 

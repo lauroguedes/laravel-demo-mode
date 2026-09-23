@@ -16,6 +16,7 @@ php artisan demo:install
 ```php
 namespace Database\Seeders;
 
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use LauroGuedes\DemoMode\Facades\Demo;
@@ -24,10 +25,12 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        $email = config('demo.credentials.accounts.0.email');
+
         User::factory()->create([
-            'email'    => 'admin@demo.test',
+            'email'    => $email,
             'name'     => 'Demo Administrator',
-            'password' => bcrypt(Demo::credentials()['password']),
+            'password' => bcrypt(Demo::passwordFor($email) ?? 'password'),
         ]);
 
         Post::factory()->count(25)->create();
@@ -45,9 +48,14 @@ Seed the amount that makes the product look like itself.
 production with the email addresses changed is not, and it is the most common way
 a demo leaks something real.
 
-Read the password from `Demo::credentials()` rather than hardcoding one. The
-reset generates it just before the seeder runs, which is what keeps the login
-page and the database in agreement without either side knowing the value.
+**Read the password from `Demo::passwordFor()`**, not a hardcoded one. The reset
+stages it just before the seeder runs, which is what keeps the login page and the
+database in agreement without either side knowing the value.
+
+**And keep the `?? 'password'`.** Outside a reset there is nothing staged, and
+`php artisan db:seed` on its own is the first thing you will run — long before the
+first reset exists. Without the fallback the seeder fails the first time you use
+it.
 
 ## 3. Declare the deployment a demo
 
@@ -59,7 +67,7 @@ DEMO_RESET_SCHEDULE="0 */6 * * *"
 ```php
 // config/demo.php
 'environments'  => ['demo'],
-'allowed_hosts' => ['demo.example.com'],
+'allowed_hosts' => ['demo.example.com'],   // the host your demo is served on
 
 'guards' => [
     'protected' => [
@@ -68,9 +76,13 @@ DEMO_RESET_SCHEDULE="0 */6 * * *"
 ],
 ```
 
-`allowed_hosts` is the guard that survives an `.env` being copied somewhere it
-should not be. `guards.protected` is what stops the first visitor changing the
-published account's password and locking everybody else out until the next reset.
+`allowed_hosts` has to match the host in your `APP_URL`, because that is the point
+of it: it is the guard that survives an `.env` being copied somewhere it should not
+be. Building locally, that means `['localhost']` — or leave it `null` until you
+deploy, and let `demo:doctor` remind you.
+
+`guards.protected` is what stops the first visitor changing the published
+account's password and locking everybody else out until the next reset.
 
 ## 4. Check it
 
@@ -78,7 +90,13 @@ published account's password and locking everybody else out until the next reset
 php artisan demo:doctor
 ```
 
-Fix every error. Errors are things that destroy data or publish secrets.
+Fix every error. Errors are things that destroy data or publish secrets — a host
+that does not match, a seeder that does not exist, credentials on a disk the web
+server would serve.
+
+Warnings are worth reading once and then deciding about. "The database does not
+look like a throwaway" fires on any name without `demo`, `staging` or `test` in
+it, which includes Laravel's default `database/database.sqlite`.
 
 ```bash
 php artisan demo:reset --dry-run

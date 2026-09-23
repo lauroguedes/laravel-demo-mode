@@ -143,9 +143,43 @@ hours because one visitor did something entirely reasonable.
 `shared` — everyone sees the same data — is the default and the only one with no
 cost.
 
-## Keys that are not here yet
+## `guards.read_only` and `guards.connection`
 
-This file contains only what the package currently reads. Read-only mode, the
-connection-level write guard, the on-demand reset route and the scoped sandbox
-each add their own block when they land, rather than shipping as switches that
-silently do nothing.
+Both off by default, and both documented where they can be explained properly:
+[write-guards.md](write-guards.md). The short version is that read-only is a
+reasonable thing to turn on and the connection guard is not, unless you know
+exactly which tables your application writes to on an ordinary request.
+
+## `on_demand`
+
+Off by default. It puts a `migrate:fresh` behind an HTTP request, so every control
+around it matters — see [on-demand-reset.md](on-demand-reset.md).
+
+## `script`
+
+```php
+'script' => true,
+```
+
+The one small inline script: the ticking countdown, the banner's dismiss button,
+and copy-to-clipboard on the credentials component. Set it `false` under a strict
+Content-Security-Policy; the values stay on the page and the controls that would
+not work are not rendered at all.
+
+## `log`
+
+```php
+'log' => ['channel' => env('DEMO_LOG_CHANNEL'), 'blocked_writes' => true],
+```
+
+Every blocked write dispatches `WriteBlocked` whatever this says. The log line is
+separate because a misconfigured connection guard blocks every request, and a
+package that filled your log aggregator by default would be teaching you to turn
+the whole thing off.
+
+## Every key, in one place
+
+This file is the reference for the keys whose default is a *decision*. The
+published `config/demo.php` documents all of them inline, including the ones that
+are obvious, and is worth reading once end to end — it is the only place that
+covers every key.

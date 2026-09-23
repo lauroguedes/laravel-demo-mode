@@ -114,3 +114,29 @@ it('redacts the password everywhere except toArray', function (): void {
         ->and(print_r($credential, true))->not->toContain($credential->password)
         ->and($credential->toArray()['password'])->toBe($credential->password);
 });
+
+/**
+ * What a seeder calls. Null outside a reset, so the documented
+ * `?? 'password'` keeps a seeder working when it is run on its own — which is the
+ * first thing anybody does after writing one.
+ */
+it('hands a seeder the staged password, and null when there is none', function (): void {
+    demo();
+
+    expect(Demo::passwordFor('admin@demo.test'))->toBeNull();
+
+    $published = app(Manager::class)->stage()[0];
+
+    expect(Demo::passwordFor('admin@demo.test'))->toBe($published->password)
+        ->and(Demo::passwordFor('nobody@demo.test'))->toBeNull();
+});
+
+it('hands a seeder nothing once the installation stops being a demo', function (): void {
+    demo();
+    app(Manager::class)->rotate();
+
+    Config::set('demo.enabled', false);
+    app()->forgetInstance(Manager::class);
+
+    expect(Demo::passwordFor('admin@demo.test'))->toBeNull();
+});

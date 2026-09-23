@@ -88,7 +88,7 @@ way round. A trait that guessed would be one that froze your whole users table.
 ```php
 'read_only' => [
     'enabled'  => env('DEMO_READ_ONLY', false),
-    'except'   => ['login', 'logout', 'register', 'password.request'],
+    'except'   => ['login', 'logout', 'register', 'password.request', 'demo.reset'],
     'methods'  => ['POST', 'PUT', 'PATCH', 'DELETE'],
     'redirect' => null,
 ],
@@ -111,7 +111,11 @@ config file. That also means a route with no name cannot be excepted and **will
 be blocked**. Fail-closed is right for a guard, but it means turning this on can
 break a POST somebody forgot to name.
 
-Signing in has to stay on the list, or the demo is a screenshot.
+Signing in has to stay on the list, or the demo is a screenshot. So does
+`demo.reset` if you have turned the [on-demand reset](on-demand-reset.md) on —
+that route is a POST like any other, and read-only blocks it by name. `demo:doctor`
+errors on the combination, so you will hear about it, but copying a shorter list
+from somewhere is the usual way to get there.
 
 ### A message instead of an error page
 

@@ -69,6 +69,12 @@ final readonly class RotationCanTakeEffect implements RunsOnDemosOnly
 
     private function rotates(): bool
     {
-        return array_any($this->config->array('credentials.accounts'), fn (mixed $account): bool => is_array($account) && ($account['rotate'] ?? true));
+        foreach ($this->config->array('credentials.accounts') as $account) {
+            if (is_array($account) && ($account['rotate'] ?? true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -71,7 +71,7 @@ final readonly class Schedule
         $from = $after ?? CarbonImmutable::now();
 
         return CarbonImmutable::instance(
-            new CronExpression($this->expression)->getNextRunDate($from->toDateTime()),
+            (new CronExpression($this->expression))->getNextRunDate($from->toDateTime()),
         );
     }
 }

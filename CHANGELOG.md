@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.0.0 - 2026-09-23
 
-First release. Everything below is new.
+First release. Everything below is new. Requires PHP 8.3 and Laravel 13.
 
 ### The core
 

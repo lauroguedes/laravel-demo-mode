@@ -96,7 +96,7 @@ describe('the snapshot strategy', function (): void {
         $artisan = Mockery::spy(Kernel::class);
         $artisan->shouldReceive('call')->andReturn(0);
 
-        new Snapshot(['name' => 'demo-baseline'])->run(resetContext($artisan));
+        (new Snapshot(['name' => 'demo-baseline']))->run(resetContext($artisan));
 
         $artisan->shouldHaveReceived('call')->withArgs(
             fn (string $command, array $parameters): bool => $command === 'snapshot:load'
@@ -114,7 +114,7 @@ describe('the snapshot strategy', function (): void {
         $artisan = Mockery::spy(Kernel::class);
         $artisan->shouldReceive('call')->andReturn(0);
 
-        new Snapshot(['name' => 'demo-baseline'])->run(resetContext($artisan, connection: 'demo_db'));
+        (new Snapshot(['name' => 'demo-baseline']))->run(resetContext($artisan, connection: 'demo_db'));
 
         $artisan->shouldHaveReceived('call')->withArgs(
             fn (string $command, array $parameters): bool => array_key_exists('--connection', $parameters)
@@ -126,7 +126,7 @@ describe('the snapshot strategy', function (): void {
         $artisan = Mockery::spy(Kernel::class);
         $artisan->shouldReceive('call')->andReturn(1);
 
-        expect(fn (): mixed => new Snapshot(['name' => 'demo-baseline'])->run(resetContext($artisan)))
+        expect(fn (): mixed => (new Snapshot(['name' => 'demo-baseline']))->run(resetContext($artisan)))
             ->toThrow(DemoModeException::class, 'failed');
     });
 });

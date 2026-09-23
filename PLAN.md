@@ -18,15 +18,19 @@ messages all are. The spec stays in pt-BR in Obsidian.
 | | Spec said | Now | Why |
 |---|---|---|---|
 | Laravel | `^11 \|\| ^12 \|\| ^13` | **`^13.0`** | One CI axis instead of three. Both dogfooding projects already run 13.26. No version-guarded branches in the scheduler or maintenance-mode paths. The spec sized the honest market at ~800 downloads/month — this is built for its author first, and reaching back two majors buys adoption that was never going to arrive. |
-| PHP | `^8.2` | **`^8.4`** | Follows from Laravel 13. Property hooks and asymmetric visibility are genuinely useful for the config-backed value objects (`ResetReport`, `ResetContext`, `Sandbox`). |
+| PHP | `^8.2` | **`^8.3`** | Laravel 13's own floor. Set to `^8.4` at first on the reasoning that it followed from Laravel 13 and that property hooks would be useful for the config-backed value objects — both wrong: Laravel 13 allows 8.3, and no 8.4 feature was ever reached for. Lowered before publishing, once it became clear the only cost was forcing both dogfooding projects above their framework's floor. |
 | Skeleton | — | Spatie layout, **no `spatie/laravel-package-tools`** | Zero runtime dependencies beyond `illuminate/*`. A package whose entire pitch is "safe to install on a server you care about" should not ask you to trust a second vendor. Also makes the "zero cost when disabled" early-return trivial to express — package-tools wants to register everything before you can opt out. |
 | Name | open | **`lauroguedes/laravel-demo-mode`** | `spatie/laravel-demo-mode` is archived and marked replaced by `laravel/framework`. The name is free and it is what people search for. `laravel-playground` describes less and would have to earn its own discovery. |
 | Namespace | `LauroGuedes\DemoMode` | unchanged | |
 | Facade | `Demo` | unchanged | |
 
-**Known friction:** `laravel-sso` declares `"php": "^8.3"`. Installing this package bumps its
-floor to 8.4. It runs 8.5 locally, so this is a one-line change in its `composer.json`,
-not a migration.
+**Resolved friction:** `laravel-sso` declares `"php": "^8.3"`, and an `^8.4` package would have
+forced that floor up — a breaking change for the starter kit's own users, caused by nothing but
+this constraint. Rector's `UP_TO_PHP_84` set had meanwhile introduced one `array_any()` call and
+four `new Foo()->bar()` expressions, so the floor was real by accident rather than by need.
+Lowered to `^8.3` before the tag was published, with the Rector set lowered to match and 8.3
+added to the CI matrix, which is the only thing that actually catches this — PHPStan's
+`phpVersion` range was tried and catches neither the function nor the syntax.
 
 ---
 
@@ -195,11 +199,11 @@ composer.json
 phpunit.xml.dist
 phpstan.neon.dist              # larastan, level 8 (spec) — level 9 attempted, baseline if it fights
 pint.json                      # laravel preset + declare_strict_types
-rector.php                     # PHP 8.4 + Laravel sets, dry-run in CI
+rector.php                     # PHP 8.3 + Laravel sets, dry-run in CI
 .editorconfig  .gitattributes  .gitignore
 LICENSE.md  README.md  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md
 .github/
-  workflows/tests.yml          # PHP 8.4/8.5 x prefer-lowest|prefer-stable
+  workflows/tests.yml          # PHP 8.3/8.4/8.5 x prefer-lowest|prefer-stable
   workflows/databases.yml      # reset strategies on sqlite, MySQL 8, PostgreSQL 16
   workflows/static.yml         # phpstan + pint --test + rector --dry-run + type coverage
   workflows/fix-php-code-style-issues.yml
@@ -223,7 +227,7 @@ docs/                          # tree per spec §9
 `composer.json` essentials:
 
 ```json
-"require": { "php": "^8.4", "illuminate/contracts": "^13.0" },
+"require": { "php": "^8.3", "illuminate/contracts": "^13.0" },
 "require-dev": {
   "orchestra/testbench": "^11.2",
   "pestphp/pest": "^5.2",

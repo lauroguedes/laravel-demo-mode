@@ -75,10 +75,8 @@ final readonly class CredentialsSurviveTheReset implements RunsOnDemosOnly
      */
     private function somethingRotates(): array
     {
-        foreach ($this->config->array('credentials.accounts') as $account) {
-            if (is_array($account) && ($account['rotate'] ?? true)) {
-                return [];
-            }
+        if ($this->config->hasRotatingAccount()) {
+            return [];
         }
 
         return [Finding::warning(

@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.3', '8.4', '8.5']
+        php: ['8.4', '8.5']
         laravel: ['13.*']
         stability: [prefer-lowest, prefer-stable]
 
@@ -36,3 +36,25 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest
+
+  # The suite above cannot run on 8.3, which composer.json allows, because Pest 5
+  # requires 8.4. This covers the floor for the parse-error class instead.
+  # CONTRIBUTING.md has the reasoning and what it does not catch.
+  syntax:
+    runs-on: ubuntu-latest
+
+    name: PHP 8.3 syntax — the floor composer.json allows
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Lint every shipped file
+        run: |
+          find src config database stubs -type f \( -name '*.php' -o -name '*.stub' \) -print0 \
+            | xargs -0 -n1 php -l

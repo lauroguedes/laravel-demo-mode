@@ -5,6 +5,29 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.1 - 2026-09-23
+
+Everything here came from installing 1.0.0 into a real project rather than a
+fresh `laravel/laravel`.
+
+### Fixed
+
+- `demo:install` reported that `.env.example` already had the `DEMO_` keys when
+  it only had a similarly named one. The check was a substring search, and
+  `SSO_DEMO_MODE` contains `DEMO_MODE`, so the first project to install this got
+  no keys and was told it already had them.
+- `ShareDemoState` shared the payload into Inertia through a `class_exists()`
+  branch — an undeclared dependency on a package this one does not require, on a
+  path no test could reach, and a second writer of `demo` for any application
+  following the documented `HandleInertiaRequests::share()` line. Removed, which
+  is what both `docs/frontend.md` and the class's own docblock already described.
+  `README.md` was the one place telling Inertia users otherwise; it now agrees.
+
+### Changed
+
+- The "does any account rotate" question has one owner, `Configuration`, rather
+  than the same predicate written out in two doctor checks.
+
 ## 1.0.0 - 2026-09-23
 
 First release. Everything below is new. Requires PHP 8.3 and Laravel 13.

@@ -84,7 +84,17 @@ final class InstallCommand extends Command
 
         $contents = (string) $files->get($path);
 
-        if (str_contains($contents, 'DEMO_MODE')) {
+        /*
+         * Anchored to the start of a line, because a substring search answers
+         * yes to SSO_DEMO_MODE and to a comment that merely mentions the key.
+         * Both happen: the first project to install this had SSO_DEMO_MODE in
+         * its .env.example and was told its keys were already there.
+         *
+         * --force does not reach here, unlike the config and the seeder. Those
+         * are files this package owns and can replace; this one is shared, and
+         * the only thing forcing could add is a second DEMO_MODE= line.
+         */
+        if (preg_match('/^\s*#?\s*DEMO_MODE=/m', $contents) === 1) {
             $this->components->twoColumnDetail('.env.example', '<fg=yellow>already has the keys</>');
 
             return;

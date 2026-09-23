@@ -73,8 +73,10 @@ Demo::toArray();        // one payload for Blade, Livewire and Inertia
 @endnotdemo
 ```
 
-For Inertia, add `ShareDemoState` to the web group and read `demo` from the page
-props. See [docs/frontend.md](docs/frontend.md).
+For Inertia, return `Demo::toArray()` from your own
+`HandleInertiaRequests::share()`. For Blade and Livewire, the optional
+`ShareDemoState` middleware puts the same payload in every view. See
+[docs/frontend.md](docs/frontend.md).
 
 ## Letting visitors reset it
 

@@ -28,9 +28,12 @@ messages all are. The spec stays in pt-BR in Obsidian.
 forced that floor up — a breaking change for the starter kit's own users, caused by nothing but
 this constraint. Rector's `UP_TO_PHP_84` set had meanwhile introduced one `array_any()` call and
 four `new Foo()->bar()` expressions, so the floor was real by accident rather than by need.
-Lowered to `^8.3` before the tag was published, with the Rector set lowered to match and 8.3
-added to the CI matrix, which is the only thing that actually catches this — PHPStan's
-`phpVersion` range was tried and catches neither the function nor the syntax.
+Lowered to `^8.3` before the tag was published, with the Rector set lowered to match.
+
+The floor cannot be covered by the suite: Pest 5 requires 8.4, so CI lints every shipped file
+on a real 8.3 instead. That catches the syntax, which is four of the five occurrences. Nothing
+catches the fifth automatically — PHPStan was tried at `phpVersion: 80300` and at a range, and
+flags neither `array_any()` nor `new Foo()->bar()`.
 
 ---
 
@@ -203,7 +206,7 @@ rector.php                     # PHP 8.3 + Laravel sets, dry-run in CI
 .editorconfig  .gitattributes  .gitignore
 LICENSE.md  README.md  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md
 .github/
-  workflows/tests.yml          # PHP 8.3/8.4/8.5 x prefer-lowest|prefer-stable
+  workflows/tests.yml          # PHP 8.4/8.5 x prefer-lowest|prefer-stable, + 8.3 lint
   workflows/databases.yml      # reset strategies on sqlite, MySQL 8, PostgreSQL 16
   workflows/static.yml         # phpstan + pint --test + rector --dry-run + type coverage
   workflows/fix-php-code-style-issues.yml

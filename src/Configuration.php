@@ -50,6 +50,21 @@ class Configuration
         return $this->enabled() && $this->string('sandbox.driver', 'shared') === 'scoped';
     }
 
+    /**
+     * Whether any published account gets a fresh password on every reset.
+     *
+     * Two doctor checks ask this — one warns when nothing rotates, the other
+     * errors when something does but the strategy cannot carry it — and they
+     * had the same predicate written out twice. The default is true, because an
+     * account listed without saying otherwise is one whose password should stop
+     * working eventually.
+     */
+    public function hasRotatingAccount(): bool
+    {
+        return collect($this->array('credentials.accounts'))
+            ->contains(fn (mixed $account): bool => is_array($account) && ($account['rotate'] ?? true));
+    }
+
     public function boolean(string $key, bool $default = false): bool
     {
         $value = $this->repository()->get($this->qualify($key));

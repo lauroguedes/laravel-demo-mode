@@ -9,6 +9,14 @@ composer test
 That runs Pint, Rector, PHPStan at level 8, 100% type coverage and the tests.
 All five gate CI.
 
+**You need PHP 8.4 to run it**, though the package itself supports 8.3: Pest 5
+requires 8.4, so the suite cannot run on the floor `composer.json` allows. CI
+covers that floor with a separate job that lints every shipped file on a real
+8.3 — enough to catch syntax that only newer PHP parses, which is how four
+`new Foo()->bar()` expressions got in. Nothing catches an 8.4-only *function*
+automatically, so if you reach for one, check `php.net` for its version first.
+Rector's set is pinned to `UP_TO_PHP_83` precisely because it introduced both.
+
 ## The one rule that is not style
 
 **Nothing destructive gets written before the barrier that guards it.**

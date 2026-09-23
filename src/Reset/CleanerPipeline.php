@@ -23,6 +23,12 @@ use Throwable;
  *
  * The failure is never silent: it is logged, and it appears in the report as the
  * step that did not happen.
+ *
+ * Unlike Doctor::check() and Restrictions\Pipeline::use(), there is no static
+ * way to register a cleaner. That is deliberate rather than an omission: a
+ * cleaner without its options does nothing useful — which disks, which queues,
+ * which keys to keep — and options live in the config map. A use() that could
+ * only pass an empty array would be half a feature offered as a whole one.
  */
 final class CleanerPipeline
 {

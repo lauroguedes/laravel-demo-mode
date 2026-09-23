@@ -332,3 +332,31 @@ it('accepts a model that actually carries the trait', function (): void {
 
     expect(findings())->not->toContain('sandbox:error');
 });
+
+/**
+ * Read-only blocks POSTs by route name and the reset route's name is a config key
+ * of its own, so renaming either without the other makes the reset button 403 to
+ * everybody.
+ */
+it('errors when read-only would block the demo reset route', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.middleware' => ['web'],
+        'demo.on_demand.name' => 'demo.rebuild',
+        'demo.guards.read_only.enabled' => true,
+        'demo.guards.read_only.except' => ['login'],
+    ]);
+
+    expect(findings())->toContain('on-demand-reset:error');
+});
+
+it('says nothing when read-only excepts the reset route', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.middleware' => ['web'],
+        'demo.guards.read_only.enabled' => true,
+        'demo.guards.read_only.except' => ['demo.reset'],
+    ]);
+
+    expect(findings())->not->toContain('on-demand-reset:error');
+});

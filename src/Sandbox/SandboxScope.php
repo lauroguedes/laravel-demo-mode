@@ -30,13 +30,29 @@ final readonly class SandboxScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $sandbox = $this->sandboxes->current();
-
-        if (! $sandbox instanceof Sandbox) {
+        /*
+         * Two different nulls, and treating them alike was a leak.
+         *
+         * No visitor at all — a console command, a queued job, a route without a
+         * session — means no scope, which is what a seeder needs.
+         *
+         * A visitor who simply has not created anything yet also has no sandbox,
+         * and they must still see only the baseline. Returning early for them
+         * showed every other visitor's rows to anybody who had not written
+         * anything, which is most people.
+         */
+        if (! $this->sandboxes->applies()) {
             return;
         }
 
         $column = $model->qualifyColumn(Sandbox::COLUMN);
+        $sandbox = $this->sandboxes->current();
+
+        if (! $sandbox instanceof Sandbox) {
+            $builder->whereNull($column);
+
+            return;
+        }
 
         $builder->where(static function (Builder $query) use ($column, $sandbox): void {
             $query->whereNull($column)->orWhere($column, $sandbox->id);

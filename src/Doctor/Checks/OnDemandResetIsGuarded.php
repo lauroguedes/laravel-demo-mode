@@ -41,6 +41,7 @@ final readonly class OnDemandResetIsGuarded implements RunsOnDemosOnly
             ...$this->hasACooldown(),
             ...$this->cooldownSurvivesTheReset(),
             ...$this->isOffTheRequest(),
+            ...$this->readOnlyLetsItThrough(),
         ];
     }
 
@@ -85,6 +86,39 @@ final readonly class OnDemandResetIsGuarded implements RunsOnDemosOnly
             'The on-demand reset has no cooldown, so the throttle is the only limit — and a throttle counts per '
                 .'visitor, so enough visitors are enough rebuilds.',
             'Set demo.on_demand.cooldown to the shortest gap you would accept between rebuilds.',
+        )];
+    }
+
+    /**
+     * Read-only mode blocks POSTs by route name, and the reset route's name is a
+     * config key of its own.
+     *
+     * Rename either without the other and the reset button 403s — a config pair
+     * the package already cross-checks in two other places, so it may as well
+     * check this one too.
+     *
+     * @return list<Finding>
+     */
+    private function readOnlyLetsItThrough(): array
+    {
+        if (! $this->config->boolean('guards.read_only.enabled')) {
+            return [];
+        }
+
+        $name = $this->config->string('on_demand.name', 'demo.reset');
+
+        if (in_array($name, $this->config->strings('guards.read_only.except'), true)) {
+            return [];
+        }
+
+        return [Finding::error(
+            'on-demand-reset',
+            sprintf(
+                'Read-only mode is on and the reset route [%s] is not in guards.read_only.except, so the reset '
+                    .'button answers 403 to everybody who presses it.',
+                $name,
+            ),
+            sprintf('Add "%s" to demo.guards.read_only.except.', $name),
         )];
     }
 

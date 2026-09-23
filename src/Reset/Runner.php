@@ -13,6 +13,7 @@ use Illuminate\Contracts\Console\Kernel as Artisan;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Foundation\MaintenanceMode;
+use Illuminate\Database\Schema\Builder as SchemaBuilder;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Contracts\ResetStrategy;
 use LauroGuedes\DemoMode\Credentials\Manager as Credentials;
@@ -21,6 +22,8 @@ use LauroGuedes\DemoMode\Events\ResetFailed;
 use LauroGuedes\DemoMode\Events\ResetStarting;
 use LauroGuedes\DemoMode\Exceptions\ResetInProgress;
 use LauroGuedes\DemoMode\Exceptions\ResetRefused;
+use LauroGuedes\DemoMode\Guards\ConnectionGuard;
+use LauroGuedes\DemoMode\Sandbox\Sandbox as SandboxModel;
 use LauroGuedes\DemoMode\Support\CacheKeys;
 use LauroGuedes\DemoMode\Support\DestructiveCommands;
 use Throwable;
@@ -111,7 +114,15 @@ final readonly class Runner
         }
 
         try {
-            return $this->execute($strategy, $options, $write);
+            /*
+             * The whole run, not just the strategy. A reset drops and recreates
+             * every application table and then the cleaners write to sessions,
+             * cache and queues — none of which the connection guard's exception
+             * list covers, because that list is about what a visitor's request
+             * legitimately touches. Without this the guard refused the first
+             * statement of every reset and the demo could never rebuild.
+             */
+            return ConnectionGuard::permitting(fn (): ResetReport => $this->execute($strategy, $options, $write));
         } finally {
             $lock?->release();
         }
@@ -175,6 +186,8 @@ final readonly class Runner
 
             $steps[] = $strategy->describe();
 
+            $this->restoreTheSandboxTable();
+
             $cleaned = $this->cleaners->run($output);
             $steps = [...$steps, ...$cleaned];
 
@@ -207,6 +220,36 @@ final readonly class Runner
         $this->events->dispatch(new ResetCompleted($report));
 
         return $report;
+    }
+
+    /**
+     * Put the sandboxes table back if the strategy took it.
+     *
+     * migrate:fresh re-runs the published migration, so it returns on its own.
+     * A snapshot or a dump does not: those drop every table and restore only
+     * what their baseline holds, and a hand-maintained .sql file does not hold
+     * this one. The Manager reads a missing table as "the feature was never set
+     * up" and serves unscoped, so without this a scoped demo came back from a
+     * reset quietly sharing one dataset between every visitor.
+     */
+    private function restoreTheSandboxTable(): void
+    {
+        if (! $this->config->scoped()) {
+            return;
+        }
+
+        try {
+            if (! $this->schema()->hasTable((new SandboxModel)->getTable())) {
+                SandboxModel::createTable();
+            }
+        } catch (Throwable) {
+            /* demo:doctor reports a sandbox table that is not there. */
+        }
+    }
+
+    private function schema(): SchemaBuilder
+    {
+        return $this->app->make('db')->connection($this->config->nullableString('reset.connection'))->getSchemaBuilder();
     }
 
     /**

@@ -38,7 +38,7 @@ trait BelongsToSandbox
         static::addGlobalScope(new SandboxScope($sandboxes));
 
         static::creating(static function (self $model) use ($sandboxes): void {
-            $sandbox = $sandboxes->current();
+            $sandbox = $sandboxes->currentOrCreate();
 
             /*
              * Overwritten rather than filled in when empty, and that is the

@@ -79,6 +79,19 @@ The middleware is optional: a sandbox is resolved on first use anyway. What it
 adds is pushing the expiry out on every request, which is the difference between
 a TTL and a deadline.
 
+## When a sandbox is created
+
+Not on arrival, and not on a read. A visitor who only looks around never gets a
+row — the scope asks on every query, so minting one there would mean an INSERT
+for every request that arrived without a cookie, which a crawler produces as fast
+as it likes.
+
+The row appears the moment they first write something that has to belong to them.
+Until then they see the baseline, which is what everybody sees anyway.
+
+That also makes pruning mean something: a row in `demo_sandboxes` is somebody who
+created something, not somebody who glanced at the home page.
+
 ## What a visitor sees
 
 Rows the seeder created carry no sandbox id, so they belong to everybody — that
@@ -166,6 +179,18 @@ is the correct outcome.
 A sandboxes table that was never migrated is a different thing — a feature that is
 not set up rather than a transient error — and serves unscoped, which `demo:doctor`
 reports as an error.
+
+## Resets and the sandboxes table
+
+`migrate-fresh-seed` re-runs your migrations, so the table comes back on its own.
+`snapshot` and `sql-dump` drop every table and restore only what their baseline
+holds — and a hand-maintained `.sql` file does not hold this one. The reset puts
+it back afterwards, because without that a scoped demo came back from every reset
+with the table missing, which reads as "the feature was never set up" and serves
+**unscoped**: one shared dataset for everybody, silently.
+
+The sandbox *rows* are not preserved. A reset deletes everything a visitor
+created, so the sandboxes that pointed at it have nothing left to point at.
 
 ## What has no sandbox
 

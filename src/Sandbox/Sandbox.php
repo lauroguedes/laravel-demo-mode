@@ -8,6 +8,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use LauroGuedes\DemoMode\Events\SandboxExpired;
 
 /**
@@ -41,6 +43,26 @@ class Sandbox extends Model
     protected $keyType = 'string';
 
     protected $guarded = [];
+
+    /**
+     * The table, created from one definition.
+     *
+     * Called by the published migration and by the Runner after a reset. A
+     * strategy that restores a snapshot or a dump drops every table and brings
+     * back only what its baseline contains — and a hand-maintained .sql file
+     * does not contain this one. Without recreating it, a scoped demo came back
+     * from a reset with the table gone, which the Manager reads as "the feature
+     * was never set up" and serves unscoped. Every visitor after that reset
+     * quietly shared one dataset.
+     */
+    public static function createTable(): void
+    {
+        Schema::create((new self)->getTable(), function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamps();
+        });
+    }
 
     public function expired(?CarbonImmutable $at = null): bool
     {

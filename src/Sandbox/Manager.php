@@ -67,13 +67,20 @@ final class Manager
     }
 
     /**
-     * This request's sandbox, resolved once.
+     * This request's sandbox, if it already has one.
      *
-     * Null when there is nobody to have one: a demo that shares its data, or
-     * anything without a session — a console command, a queued job, an API route.
-     * Callers treat null as "do not scope", which is right for all of those, and
-     * is also why scoped isolation needs session middleware on the routes that
-     * use it. demo:doctor says so.
+     * Reading never creates. That is the difference between a feature and an
+     * unbounded write path: the scope asks this on every query against a marked
+     * model, so minting a row here meant one INSERT for every request that
+     * arrived without a cookie — which a visitor, or a crawler, can produce as
+     * fast as they like. The package is careful to put three limits in front of
+     * the reset route; creating rows on anonymous reads would have been the same
+     * exposure with none.
+     *
+     * Null when there is nobody to have one: a demo that shares its data,
+     * anything without a session, or a visitor who has not written anything yet.
+     * What callers do with null differs, and the difference matters — see
+     * SandboxScope.
      */
     public function current(): ?Sandbox
     {
@@ -94,6 +101,45 @@ final class Manager
         $this->resolvedFor = $session->getId();
 
         return $this->resolved = $this->fromSession($session);
+    }
+
+    /**
+     * This request's sandbox, making one if it does not have it yet.
+     *
+     * Called from exactly one place: the moment a visitor first writes something
+     * that has to belong to them. A row in this table then means "somebody
+     * created something", which is also what makes pruning meaningful.
+     */
+    public function currentOrCreate(): ?Sandbox
+    {
+        $existing = $this->current();
+
+        if ($existing instanceof Sandbox) {
+            return $existing;
+        }
+
+        $session = $this->session();
+
+        if (! $this->scoped() || ! $session instanceof Session) {
+            return null;
+        }
+
+        $this->resolvedFor = $session->getId();
+
+        return $this->resolved = $this->create($session, $this->config->string('sandbox.key', 'demo_sandbox'));
+    }
+
+    /**
+     * Whether a sandbox would be resolvable here at all.
+     *
+     * The distinction the scope needs: a request with a session on a scoped demo
+     * is a visitor who should see only the baseline until they create something,
+     * while a console command or an API route has no visitor and should see
+     * everything.
+     */
+    public function applies(): bool
+    {
+        return $this->scoped() && $this->session() instanceof Session && ! $this->tableIsMissing();
     }
 
     /**
@@ -144,8 +190,7 @@ final class Manager
 
     private function fromSession(Session $session): ?Sandbox
     {
-        $key = $this->config->string('sandbox.key', 'demo_sandbox');
-        $id = $session->get($key);
+        $id = $session->get($this->config->string('sandbox.key', 'demo_sandbox'));
 
         try {
             /*
@@ -157,11 +202,7 @@ final class Manager
                 ? Sandbox::query()->whereKey($id)->first()
                 : null;
 
-            if ($existing instanceof Sandbox && ! $existing->expired()) {
-                return $existing;
-            }
-
-            return $this->create($session, $key);
+            return $existing instanceof Sandbox && ! $existing->expired() ? $existing : null;
         } catch (Throwable $e) {
             /*
              * Two very different failures arrive here and they must not be

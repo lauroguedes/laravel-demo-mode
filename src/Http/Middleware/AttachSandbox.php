@@ -13,11 +13,14 @@ use Symfony\Component\HttpFoundation\Response;
  * Gives this request's visitor their corner, and keeps it alive while they are
  * using it.
  *
- * Strictly speaking optional: the Manager resolves a sandbox on first use
- * anyway, so a scoped demo works without this. What it adds is the expiry
- * renewal — without it a sandbox is pruned an hour after it was created rather
- * than an hour after the visitor stopped looking, which is the difference between
- * a TTL and a deadline.
+ * Strictly speaking optional: a sandbox is created the moment a visitor first
+ * writes something, with or without this. What it adds is the expiry renewal —
+ * without it a sandbox is pruned an hour after it was created rather than an hour
+ * after the visitor stopped using it, which is the difference between a TTL and a
+ * deadline.
+ *
+ * It does not create anything either. A visitor who only reads never gets a row,
+ * which is what keeps an anonymous crawler from being an unbounded write path.
  *
  * Runs after the session middleware, because the identifier lives in the session.
  * That is why it is an alias rather than something this package pushes into the

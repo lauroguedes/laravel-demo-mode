@@ -146,6 +146,12 @@ command, no raw `DB::statement` gets past it.
 `demo:doctor` checks this against what your application actually uses, and errors
 when a table it writes to on ordinary requests is missing from the list.
 
+**The reset is exempt.** A rebuild drops and recreates every application table,
+none of which is on the exception list — so without lifting the guard for the
+duration of a reset, the demo could never rebuild itself again, and the scheduler
+would fail quietly every six hours. The Runner lifts it for exactly as long as it
+lifts Laravel's own destructive-command prohibition.
+
 A statement whose verb or table this guard cannot parse is **blocked**, not
 allowed. The worst an unrecognised statement can do is refuse a write.
 

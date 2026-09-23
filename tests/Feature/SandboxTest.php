@@ -44,6 +44,29 @@ it('gives a visitor the seeded baseline plus nothing of their own yet', function
 });
 
 /**
+ * Reading never creates. The scope asks the Manager on every query against a
+ * marked model, so minting a row there meant one INSERT for every request that
+ * arrived without a cookie — which a crawler produces as fast as it likes. The
+ * package puts three limits in front of the reset route; this would have been
+ * the same exposure with none.
+ */
+it('creates nothing for a visitor who only looks', function (): void {
+    $this->getJson('/notes');
+    $this->flushSession();
+    $this->getJson('/notes');
+    $this->flushSession();
+    $this->getJson('/notes');
+
+    expect(Sandbox::query()->count())->toBe(0);
+});
+
+it('creates one the moment a visitor writes something', function (): void {
+    $this->postJson('/notes', ['body' => 'mine']);
+
+    expect(Sandbox::query()->count())->toBe(1);
+});
+
+/**
  * The property the whole feature exists for.
  */
 it('keeps two visitors out of each other\'s notes', function (): void {
@@ -65,7 +88,7 @@ it('keeps two visitors out of each other\'s notes', function (): void {
  * somebody else's rows — otherwise the global scope is an access-control
  * decision made from user input.
  */
-it('mints a new sandbox for a forged identifier rather than selecting one', function (): void {
+it('gives a forged identifier nothing but the baseline', function (): void {
     $this->postJson('/notes', ['body' => 'mine']);
 
     $victim = Sandbox::query()->sole()->id;
@@ -82,12 +105,13 @@ it('mints a new sandbox for a forged identifier rather than selecting one', func
     $this->flushSession();
     $this->withSession(['demo_sandbox' => (string) Str::ulid()]);
 
+    /* An identifier matching no live row selects nothing and creates nothing. */
     $this->getJson('/notes')->assertJson(['notes' => ['A seeded note']]);
 
-    expect(Sandbox::query()->count())->toBe(2);
+    expect(Sandbox::query()->count())->toBe(1);
 });
 
-it('mints a new sandbox when the old one has expired', function (): void {
+it('stops honouring a sandbox once it has expired', function (): void {
     $this->postJson('/notes', ['body' => 'mine']);
 
     $sandbox = Sandbox::query()->sole();
@@ -99,7 +123,7 @@ it('mints a new sandbox when the old one has expired', function (): void {
 it('keeps a sandbox alive while its visitor is still using it', function (): void {
     CarbonImmutable::setTestNow('2026-09-23 10:00:00');
 
-    $this->getJson('/notes');
+    $this->postJson('/notes', ['body' => 'mine']);
     $first = Sandbox::query()->sole()->expires_at;
 
     /* Past half the hour-long TTL, so the renewal is worth a write. */
@@ -118,7 +142,7 @@ it('keeps a sandbox alive while its visitor is still using it', function (): voi
 it('does not write on every request just to say the visitor is still here', function (): void {
     CarbonImmutable::setTestNow('2026-09-23 10:00:00');
 
-    $this->getJson('/notes');
+    $this->postJson('/notes', ['body' => 'mine']);
     $first = Sandbox::query()->sole()->expires_at;
 
     CarbonImmutable::setTestNow('2026-09-23 10:05:00');
@@ -131,7 +155,7 @@ it('does not write on every request just to say the visitor is still here', func
 it('announces a new sandbox', function (): void {
     Event::fake([SandboxCreated::class]);
 
-    $this->getJson('/notes');
+    $this->postJson('/notes', ['body' => 'mine']);
 
     Event::assertDispatched(SandboxCreated::class);
 });
@@ -286,13 +310,12 @@ it('keeps a visitor their sandbox across a session regeneration', function (): v
  * A failed request is the correct outcome. Showing everybody everything is not.
  */
 it('fails the request rather than unscoping when the database errors', function (): void {
+    /* A visitor with a sandbox, so the lookup actually runs. */
     $this->postJson('/notes', ['body' => 'mine']);
 
     /* The table is there; the query against it is what breaks. */
     DB::statement('drop table demo_sandboxes');
     DB::statement('create table demo_sandboxes (wrong_column integer)');
-
-    $this->flushSession();
 
     /* A failed request, not a request that quietly showed everything. */
     $this->getJson('/notes')->assertStatus(500);

@@ -53,6 +53,27 @@ its place: by the time `db:seed` fails, `migrate:fresh` has already run, so the
 demo is left with an empty database and nothing to refill it — the failure
 arrives after the damage.
 
+**You cannot call `demo:reset` from a test that uses `RefreshDatabase`.** On
+SQLite, `migrate:fresh` runs `VACUUM`, and SQLite refuses to vacuum inside a
+transaction — which is exactly what `RefreshDatabase` holds open for the duration
+of each test. The error is `cannot VACUUM from within a transaction`, and it comes
+from the database rather than from anything here.
+
+Test your seeder instead. What an application owns is what the seeder puts in the
+database, and that is the same question without the fight:
+
+```php
+Demo::rotate();          // stage a password, as the reset does before seeding
+
+$this->seed(DemoSeeder::class);
+
+expect(Hash::check(Demo::credentials()['password'], $user->password))->toBeTrue();
+```
+
+The reset itself — `migrate:fresh`, the cleaners, the credentials, the guards
+standing down — is covered by this package's own integration suite, against a real
+database and without transactions.
+
 ## `snapshot`
 
 ```php

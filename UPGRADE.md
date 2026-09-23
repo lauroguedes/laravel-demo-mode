@@ -52,6 +52,12 @@ files is a flag where getting one wrong is invisible until a visitor finds it.
 | a login check blocking an admin account | `Restrictions\BlockPrivilegedAccounts` |
 | a password in a JSON file or the cache | `credentials.store` — the shapes match |
 
+`BlockPrivilegedAccounts` listens on `Login` and `Attempting`, so it refuses the
+sign-in. If what you have is middleware checking on **every** request, keep it:
+yours also closes a session that was opened before the flag went on, which this
+does not. Point it at `Demo::enabled()` and leave the restriction unconfigured
+rather than running both.
+
 ### 3. Delete `ProhibitDestructiveCommands => ! demo`
 
 If you disabled Laravel's destructive-command prohibition so your reset could run:
@@ -117,6 +123,26 @@ php artisan demo:doctor
 ```
 
 Then delete your old demo classes and run it again. Errors mean stop.
+
+### 8. Move your reset test down a level
+
+If you had a test that ran your old reset command, it will not survive being
+pointed at `demo:reset`: this runs `migrate:fresh`, which on SQLite runs `VACUUM`,
+which SQLite refuses inside the transaction `RefreshDatabase` holds open. A
+command that used `migrate:refresh` had no such problem, which is why the test
+passed before.
+
+Test the seeder instead — what your application owns is what the seeder writes:
+
+```php
+Demo::rotate();                 // stage a password, as the reset does
+$this->seed(DemoSeeder::class);
+
+expect(Hash::check(Demo::credentials()['password'], $admin->password))->toBeTrue();
+```
+
+Both projects this package was extracted from had exactly this test, and both
+ended up here. See [docs/reset-strategies.md](docs/reset-strategies.md).
 
 ### Keeping your old environment variable
 

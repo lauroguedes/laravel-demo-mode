@@ -62,8 +62,12 @@ it('dispatches one job however many ask for it', function (): void {
  * The cooldown reads the recorded reset, so a rebuild from the scheduler or the
  * command line also starts the clock. A visitor pressing the button ten seconds
  * after the cron ran should be told to wait.
+ *
+ * Told to wait, not told how long: the number stays in Retry-After, which is for
+ * clients, and out of the sentence, which is for people. A countdown to the next
+ * allowed attempt reads as an invitation to come back and spend it.
  */
-it('refuses inside the cooldown, and says how long to wait', function (): void {
+it('refuses inside the cooldown without saying when to come back', function (): void {
     Queue::fake();
 
     onDemand(['demo.on_demand.cooldown' => 900]);
@@ -76,6 +80,10 @@ it('refuses inside the cooldown, and says how long to wait', function (): void {
 
     expect((int) $response->headers->get('Retry-After'))->toBeGreaterThan(0)
         ->and((int) $response->headers->get('Retry-After'))->toBeLessThanOrEqual(900);
+
+    expect($response->json('message'))
+        ->toContain('later')
+        ->not->toMatch('/\d+\s*(second|minute|hour)/i');
 
     Queue::assertNothingPushed();
 });

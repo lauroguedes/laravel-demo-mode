@@ -159,6 +159,17 @@ describe('the reset button', function (): void {
  * A shadow root cannot be expressed as markup, so a pill with no script is a
  * blank page. It becomes the bare banner instead, which needs none.
  */
+/*
+ * The countdown reaching zero used to sit on "0s" — a clock that had plainly
+ * stopped. It now says what is happening and fetches the page again, so the bar
+ * has to be handed the words for it.
+ */
+it('carries the wording for a countdown that has run out', function (): void {
+    $payload = state(bar(['demo.reset.schedule' => 'hourly']));
+
+    expect($payload['strings']['rebuilding'])->toBe('Rebuilding the demonstration…');
+});
+
 it('falls back to the bare banner when the script is switched off', function (): void {
     $html = bar(['demo.script' => false]);
 

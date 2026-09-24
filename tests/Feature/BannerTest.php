@@ -176,3 +176,17 @@ it('ships its script once across different components on the same page', functio
 
     expect(substr_count($html, 'data-demo-script'))->toBe(1);
 });
+
+/*
+ * The bare banner's script has its own copy of what happens when the countdown
+ * runs out, so it needs its own copy of the wording. The last change to that
+ * ending reached the floating bar and missed this one, which is what this
+ * asserts against.
+ */
+it('carries the wording for a countdown that has run out', function (): void {
+    demo(['demo.reset.schedule' => 'hourly']);
+
+    expect(Blade::render('<x-demo-banner />'))
+        ->toContain('data-demo-rebuilding="Rebuilding the demonstration')
+        ->toContain('data-demo-reset-at=');
+});

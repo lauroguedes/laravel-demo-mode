@@ -15,9 +15,11 @@
     back, and the notice saying the data is temporary is the one thing on a demo
     that should be hard to lose.
 
-    This is the bare banner's copy of the countdown. The floating bar has its
-    own in resources/dist/demo-bar.js, because it runs inside a shadow root from
-    a served file — if the units or the shape change, change both.
+    This is the bare banner's copy of the countdown, and of what happens when it
+    runs out. The floating bar has its own in resources/dist/demo-bar.js, because
+    it runs inside a shadow root from a served file — if the units, the shape or
+    the ending change, change both. The last change to reach zero only landed
+    here on the second pass, which is exactly what this note is for.
 
     The countdown's unit words come from the translations rather than being
     hardcoded here. The first tick overwrites whatever the server rendered, so
@@ -70,12 +72,42 @@
             ? `${hours}${unit.hour} ${minutes}${unit.minute}`
             : (minutes > 0 ? `${minutes}${unit.minute} ${seconds}${unit.second}` : `${seconds}${unit.second}`);
 
+        if (left > 0) return setTimeout(tick, 1000);
+
         /*
-         * At zero the scheduler is rebuilding, not finished. Reloading here
-         * would put every visitor on the maintenance page at once, so the
-         * countdown stops and the next navigation tells the truth.
+         * Zero means the scheduler is rebuilding, not that it finished. Sitting
+         * on "0s" was a clock that had plainly stopped.
          */
-        if (left > 0) setTimeout(tick, 1000);
+        rebuilding();
+    };
+
+    /*
+     * The same ending as the floating bar's, in the other runtime. It asks for
+     * the page rather than guessing how long a rebuild takes: a HEAD answers 503
+     * while maintenance is on, and reloading into that leaves the visitor on a
+     * page with nothing on it. Gives up after a couple of minutes.
+     *
+     * The first wait is jittered widely because every visitor's countdown
+     * reaches zero on the same second.
+     */
+    const rebuilding = (attempt = 0) => {
+        const message = banner?.querySelector('[data-demo-banner-message]');
+
+        if (message && banner.dataset.demoRebuilding) {
+            message.textContent = banner.dataset.demoRebuilding;
+        }
+
+        setTimeout(async () => {
+            if (attempt >= 24) return location.reload();
+
+            try {
+                const response = await fetch(location.href, { method: 'HEAD', cache: 'no-store' });
+
+                if (response.status !== 503) return location.reload();
+            } catch (e) { /* not answering yet, which is not ready */ }
+
+            rebuilding(attempt + 1);
+        }, attempt === 0 ? 4000 + Math.random() * 8000 : 3000 + Math.random() * 2000);
     };
 
     tick();

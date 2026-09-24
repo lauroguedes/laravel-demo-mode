@@ -158,6 +158,7 @@ final readonly class BannerState
                 'confirm' => (string) trans($this->action('confirm')),
                 'confirmYes' => (string) trans($this->action('confirm_yes')),
                 'working' => (string) trans($this->action('working')),
+                'rebuilding' => (string) trans('demo::demo.bar.rebuilding'),
                 'cancel' => (string) trans('demo::demo.bar.cancel'),
                 'failed' => (string) trans('demo::demo.bar.failed'),
                 'dismiss' => (string) trans('demo::demo.banner.dismiss'),

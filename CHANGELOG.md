@@ -5,6 +5,36 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.1 - 2026-09-24
+
+Three things found by watching the bar rather than reading it.
+
+### Fixed
+
+- **The spinner was the reset icon turning.** That icon is a circular arrow with
+  a head and a gap, so rotating it reads as a shape tumbling rather than
+  something loading. It is a ring and a moving arc now.
+- **A countdown that reached zero sat on "0s"** — a clock that had plainly
+  stopped. It now says "Rebuilding the demonstration…" and waits for the demo to
+  come back, asking for the page until it stops answering 503 and then reloading.
+  It gives up after a couple of minutes and reloads anyway.
+
+  Waiting rather than reloading on a timer, because a rebuild that outlasts the
+  guess would drop the visitor on the maintenance page, which carries none of
+  this and no way to try again — worse than the stuck clock. The first wait is
+  jittered, because every visitor's countdown reaches zero on the same second.
+
+  Both styles. The bare banner has its own copy of the countdown, and the first
+  pass of this fix reached only the floating bar.
+
+### Changed
+
+- **The cooldown refusal no longer says how long to wait.** "Try again later"
+  rather than "try again in 11 minutes": the cooldown is a limit rather than a
+  schedule, and a countdown to the next allowed attempt reads as an invitation to
+  come back and spend it. `Retry-After` keeps the number, because that header is
+  for clients rather than for people.
+
 ## 1.3.0 - 2026-09-24
 
 ### Added

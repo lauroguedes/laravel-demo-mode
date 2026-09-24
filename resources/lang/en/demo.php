@@ -43,6 +43,7 @@ return [
         'confirm_yes_sandbox' => 'Clear',
         'working_sandbox' => 'Clearing…',
 
+        'rebuilding' => 'Rebuilding the demonstration…',
         'failed' => 'That did not work. Try again in a moment.',
     ],
 
@@ -64,7 +65,7 @@ return [
         'read_only' => 'This demonstration is read-only.',
         'write_prohibited' => 'That cannot be changed in the demonstration.',
         'privileged_account' => 'Signing in as this account is disabled in the demonstration.',
-        'cooldown' => 'This demonstration was reset recently. Try again in :time.',
+        'cooldown' => 'This demonstration was reset recently. Try again later.',
         'in_progress' => 'This demonstration is already being rebuilt. Give it a moment, then reload.',
         'unavailable' => 'This demonstration cannot be rebuilt right now.',
         'not_found' => 'Not found.',

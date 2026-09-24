@@ -184,6 +184,12 @@ in a page component:
 Outside the Vue or React tree on purpose: it survives a client-side visit, and no
 page component has to know it exists.
 
+**When the countdown reaches zero** the bar says it is rebuilding and fetches the
+page again, after a jittered four to twelve seconds. It cannot know when the
+scheduler actually finishes — there is nothing to ask — so landing on a
+maintenance page is a correct answer rather than a failure. The jitter is there
+because every visitor's countdown reaches zero on the same second.
+
 The pill needs `script` to be on — a shadow root cannot be expressed as markup.
 With `script => false` the style falls back to `bare` rather than rendering
 nothing. Its one script is served from `/demo-mode/bar.js` (configurable as

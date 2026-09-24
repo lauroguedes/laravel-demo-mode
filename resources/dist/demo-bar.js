@@ -209,6 +209,15 @@
         reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>',
         close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
         link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>',
+
+        /*
+         * A ring and an arc, not the reset glyph turning. Spinning that one
+         * looked wrong for a reason worth remembering: it is a circular arrow
+         * with a head and a gap, so rotating it reads as a shape tumbling rather
+         * than something loading. A symmetric track with one moving arc is what
+         * the eye reads as progress.
+         */
+        spinner: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
     };
 
     class DemoModeBar extends HTMLElement {
@@ -259,6 +268,7 @@
 
         disconnectedCallback() {
             clearTimeout(this.timer);
+            this.waiting = false;
         }
 
         /* ---- states ------------------------------------------------------ */
@@ -369,11 +379,59 @@
             }
         }
 
+        /**
+         * The reset the scheduler is doing, waited out rather than guessed at.
+         *
+         * The first version reloaded once after a fixed delay, which is fine for
+         * a rebuild that finishes inside it and bad for one that does not: the
+         * visitor lands on the maintenance page, which carries none of this and
+         * no way to try again, and sits there until they think to reload. That
+         * is worse than the stuck clock it replaced.
+         *
+         * So it asks. A HEAD for the page answers 503 while maintenance is on
+         * and something else when the demo is back, which is the only signal
+         * available without inventing an endpoint. It gives up after a couple of
+         * minutes and reloads anyway, because a bar waiting forever is the same
+         * dead clock in a different costume.
+         *
+         * The first wait is jittered widely because every visitor's countdown
+         * reaches zero on the same second.
+         */
+        rebuilding() {
+            this.working(this.state.strings.rebuilding);
+
+            this.waiting = true;
+
+            this.pollUntilItIsBack(0);
+        }
+
+        pollUntilItIsBack(attempt) {
+            const first = attempt === 0;
+
+            this.timer = setTimeout(async () => {
+                if (!this.waiting) return;
+
+                if (attempt >= 24) return window.location.reload();
+
+                try {
+                    const response = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
+
+                    if (!this.waiting) return;
+
+                    if (response.status !== 503) return window.location.reload();
+                } catch (e) {
+                    /* Not answering at all yet, which is the same as not ready. */
+                }
+
+                this.pollUntilItIsBack(attempt + 1);
+            }, first ? 4000 + Math.random() * 8000 : 3000 + Math.random() * 2000);
+        }
+
         working(text) {
             clearTimeout(this.timer);
             this.confirming = false;
             this.bar.replaceChildren(
-                this.node('span', { class: 'icon spin', html: ICON.reset }),
+                this.node('span', { class: 'icon spin', html: ICON.spinner }),
                 this.node('span', { class: 'message', text }),
             );
         }
@@ -434,13 +492,23 @@
                         ? `${minutes}${unit.minute} ${seconds}${unit.second}`
                         : `${seconds}${unit.second}`;
 
+                if (left > 0) {
+                    this.timer = setTimeout(tick, 1000);
+
+                    return;
+                }
+
                 /*
-                 * At zero the scheduler is rebuilding, not finished. Reloading
-                 * here would put every visitor on the maintenance page at the
-                 * same moment, so it stops and the next navigation tells the
-                 * truth.
+                 * Zero means the scheduler is rebuilding, not that it finished.
+                 * Sitting on "0s" was a clock that had plainly stopped, so the
+                 * bar says what is going on and fetches the page again.
+                 *
+                 * After a jittered wait, because every visitor's countdown hits
+                 * zero on the same second: reloading immediately would send the
+                 * whole room at the maintenance page together, which is the one
+                 * thing the old comment here was right about.
                  */
-                if (left > 0) this.timer = setTimeout(tick, 1000);
+                this.rebuilding();
             };
 
             tick();
@@ -477,6 +545,15 @@
          * Reload, or follow a link, and it is back.
          */
         hide() {
+            /*
+             * Including a reload the countdown had queued. Closing the bar is
+             * "leave me alone", and a page that reloads itself afterwards is the
+             * opposite of that — the data comes back fresh on the next
+             * navigation anyway.
+             */
+            clearTimeout(this.timer);
+            this.waiting = false;
+
             this.hidden = true;
             this.style.setProperty('display', 'none');
         }

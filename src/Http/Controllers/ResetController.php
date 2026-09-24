@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace LauroGuedes\DemoMode\Http\Controllers;
 
 use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 use Illuminate\Contracts\Bus\Dispatcher as Bus;
 use Illuminate\Http\Request;
 use LauroGuedes\DemoMode\Configuration;
@@ -66,10 +65,18 @@ class ResetController
         $waitFor = $this->cooldownRemaining();
 
         if ($waitFor > 0) {
+            /*
+             * "Later", without the number. The cooldown is a limit rather than a
+             * schedule, and a countdown to the next allowed attempt reads as an
+             * invitation to come back and spend it.
+             *
+             * Retry-After keeps the number, because that header is for clients
+             * rather than for people, and a well-behaved one should be told.
+             */
             return $this->respond(
                 $request,
                 Response::HTTP_TOO_MANY_REQUESTS,
-                (string) trans('demo::demo.errors.cooldown', ['time' => CarbonImmutable::now()->addSeconds($waitFor)->diffForHumans(syntax: CarbonInterface::DIFF_ABSOLUTE)]),
+                (string) trans('demo::demo.errors.cooldown'),
                 ['Retry-After' => (string) $waitFor],
             );
         }

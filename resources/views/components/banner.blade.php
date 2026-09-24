@@ -14,6 +14,7 @@
     data-demo-variant="{{ $banner->variant }}"
     data-demo-position="{{ $banner->position }}"
     @if ($banner->nextResetAt) data-demo-reset-at="{{ $banner->nextResetAt->toIso8601String() }}" @endif
+    data-demo-rebuilding="{{ __('demo::demo.bar.rebuilding') }}"
     {{ $attributes->class($banner->class ?? '') }}
 >
     <p data-demo-banner-message>{{ $banner->html($units()) }}</p>

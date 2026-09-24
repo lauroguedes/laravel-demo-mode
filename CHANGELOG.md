@@ -5,6 +5,13 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.1 - 2026-09-24
+
+No change to the shipped code. `demo:install`'s test published a config into the
+test application and never removed it, so a stale copy from before the floating
+bar existed shadowed the package's own — which made `BannerTest` pass locally
+while failing in CI. The test cleans up after itself now.
+
 ## 1.1.0 - 2026-09-24
 
 ### Added

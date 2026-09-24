@@ -44,6 +44,7 @@ final readonly class BannerState
         public ?string $label = null,
         public ?array $cta = null,
         public ?string $resetUrl = null,
+        public string $resetScope = 'everything',
     ) {}
 
     /**
@@ -146,12 +147,18 @@ final readonly class BannerState
             'nextResetAt' => $this->nextResetAt?->toIso8601String(),
             'units' => $units,
             'resetUrl' => $this->resetUrl,
+            /*
+             * Chosen here rather than in the element. "Rebuild the
+             * demonstration" and "clear what you created" are different
+             * promises, and which one the button keeps is a server-side fact —
+             * the element is not given enough to work it out, and should not be.
+             */
             'strings' => [
-                'reset' => (string) trans('demo::demo.bar.reset'),
-                'confirm' => (string) trans('demo::demo.bar.confirm'),
-                'confirmYes' => (string) trans('demo::demo.bar.confirm_yes'),
+                'reset' => (string) trans($this->action('reset')),
+                'confirm' => (string) trans($this->action('confirm')),
+                'confirmYes' => (string) trans($this->action('confirm_yes')),
+                'working' => (string) trans($this->action('working')),
                 'cancel' => (string) trans('demo::demo.bar.cancel'),
-                'working' => (string) trans('demo::demo.bar.working'),
                 'failed' => (string) trans('demo::demo.bar.failed'),
                 'dismiss' => (string) trans('demo::demo.banner.dismiss'),
             ],
@@ -180,6 +187,14 @@ final readonly class BannerState
      * one rendered was 827 pixels of prose. Same fact, said in the shape it is
      * being said in — which is a translation-file decision, not a substring one.
      */
+    /**
+     * The wording for whichever reset this bar's button performs.
+     */
+    private function action(string $name): string
+    {
+        return 'demo::demo.bar.'.$name.($this->resetScope === 'sandbox' ? '_sandbox' : '');
+    }
+
     private function key(string $name): string
     {
         return $this->style === 'pill'

@@ -5,6 +5,36 @@
 First release. Nothing to upgrade from — but if you already have a hand-rolled
 demo mode, the rest of this page is for you.
 
+## To 1.3
+
+Two changes to the scoped sandbox driver. Neither touches a demo on the default
+`shared` driver.
+
+**Pruning now deletes the rows a sandbox owned**, not just the sandbox. Those
+rows were unreachable — no live sandbox matched their id — so this is reclaiming
+space rather than losing data. If your own code reads across sandboxes with
+`withoutSandbox()` and counts them, set `sandbox.prune_rows` to `false`.
+
+**The on-demand reset button now clears the visitor's own rows** on a scoped
+demo, instead of rebuilding the installation. If you had `on_demand.enabled` on
+together with `sandbox.driver => 'scoped'` and meant the button to rebuild
+everything, say so:
+
+```php
+'on_demand' => ['scope' => 'everything'],
+```
+
+**Both apply without you editing anything.** A config published before 1.3 has
+neither key, and the code defaults are the new behaviour — `prune_rows` true and
+`scope` auto. That is deliberate, because the old behaviour was leaving
+unreachable rows in your tables and pointing a rebuild-everything button at a
+demo that had a better answer. But it means a scoped demo changes on upgrade, so
+it is worth a minute rather than a skim.
+
+This is a behaviour change in a minor version. The package's upgrade policy
+reserves majors for contract and payload changes; these two alter what a default
+does, which is a judgement call rather than a rule.
+
 ## To 1.1
 
 Nothing to do. The floating bar is opt-in for an installation that already has a

@@ -8,12 +8,19 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use LauroGuedes\DemoMode\DemoMode;
+use LauroGuedes\DemoMode\Events\SandboxCleared;
 use LauroGuedes\DemoMode\Events\SandboxCreated;
 use LauroGuedes\DemoMode\Events\SandboxExpired;
+use LauroGuedes\DemoMode\Http\Controllers\ResetController;
 use LauroGuedes\DemoMode\Sandbox\Manager;
+use LauroGuedes\DemoMode\Sandbox\Purger;
 use LauroGuedes\DemoMode\Sandbox\Sandbox;
+use Workbench\App\Models\DemoUser;
+use Workbench\App\Models\SandboxedDraft;
 use Workbench\App\Models\SandboxedNote;
 
 beforeEach(function (): void {
@@ -362,4 +369,157 @@ it('serves unscoped when the feature was configured but never migrated', functio
 
     /* Unscoped, so this visitor sees the other one's note. demo:doctor errors. */
     $this->getJson('/notes')->assertJson(['notes' => ['A seeded note', 'mine']]);
+});
+
+describe('clearing your own sandbox', function (): void {
+    beforeEach(function (): void {
+        demo([
+            'demo.sandbox.driver' => 'scoped',
+            'demo.sandbox.models' => [SandboxedNote::class],
+            'demo.on_demand.enabled' => true,
+        ]);
+
+        Route::middleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class, 'demo.sandbox'])
+            ->post('/demo/reset', ResetController::class);
+    });
+
+    /*
+     * The whole point of the driver deciding: the scheduler rebuilds the
+     * installation, and a visitor on a scoped demo wants their own corner back,
+     * not everybody else's session thrown away.
+     */
+    it('takes the visitor back to the baseline and leaves the rest alone', function (): void {
+        $this->postJson('/notes', ['body' => 'mine'])->assertOk();
+        $this->getJson('/notes')->assertJson(['notes' => ['A seeded note', 'mine']]);
+
+        $this->postJson('/demo/reset')->assertOk();
+
+        $this->getJson('/notes')->assertJson(['notes' => ['A seeded note']]);
+
+        /* The row is gone rather than merely hidden. */
+        expect(DB::table('demo_notes')->whereNotNull(Sandbox::COLUMN)->count())->toBe(0);
+    });
+
+    it('leaves another visitor untouched', function (): void {
+        $this->postJson('/notes', ['body' => 'mine'])->assertOk();
+
+        $mine = app(Manager::class)->current();
+
+        $this->flushSession();
+        $this->postJson('/notes', ['body' => 'theirs'])->assertOk();
+
+        /* The second visitor clears; the first one's note survives. */
+        $this->postJson('/demo/reset')->assertOk();
+
+        expect(DB::table('demo_notes')->where(Sandbox::COLUMN, $mine->id)->count())->toBe(1);
+    });
+
+    /* Pressing it with nothing to clear is not a failure. */
+    it('answers a visitor who has created nothing', function (): void {
+        $this->postJson('/demo/reset')->assertOk();
+
+        expect(Sandbox::count())->toBe(0);
+    });
+
+    it('announces what it removed', function (): void {
+        Event::fake([SandboxCleared::class]);
+
+        $this->postJson('/notes', ['body' => 'mine'])->assertOk();
+        $this->postJson('/demo/reset')->assertOk();
+
+        Event::assertDispatched(SandboxCleared::class, fn (SandboxCleared $event): bool => $event->rows === 1);
+    });
+
+    /*
+     * A visitor clearing their rows is still the same visitor. Minting a new
+     * sandbox would be a second thing happening under one button.
+     */
+    it('keeps the visitor their sandbox', function (): void {
+        $this->postJson('/notes', ['body' => 'mine'])->assertOk();
+        $before = app(Manager::class)->current()?->id;
+
+        $this->postJson('/demo/reset')->assertOk();
+
+        expect(Sandbox::find($before))->not->toBeNull();
+    });
+
+    /* The override is what a scoped demo uses to get the old behaviour back. */
+    it('rebuilds everything instead when the scope says so', function (): void {
+        demo([
+            'demo.sandbox.driver' => 'scoped',
+            'demo.on_demand.enabled' => true,
+            'demo.on_demand.scope' => 'everything',
+        ]);
+
+        expect(app(DemoMode::class)->onDemandScope())->toBe('everything');
+    });
+});
+
+it('prunes the rows a sandbox left behind, not just the sandbox', function (): void {
+    demo(['demo.sandbox.driver' => 'scoped', 'demo.sandbox.models' => [SandboxedNote::class]]);
+
+    $sandbox = Sandbox::create(['id' => (string) Str::uuid(), 'expires_at' => CarbonImmutable::now()->subMinute()]);
+
+    DB::table('demo_notes')->insert(['body' => 'theirs', 'demo_sandbox_id' => $sandbox->id]);
+
+    $this->artisan('demo:sandbox:prune')->assertSuccessful();
+
+    expect(Sandbox::count())->toBe(0)
+        ->and(DB::table('demo_notes')->count())->toBe(1)
+        ->and(DB::table('demo_notes')->whereNull(Sandbox::COLUMN)->count())->toBe(1);
+});
+
+it('leaves them where an application says it reads across sandboxes itself', function (): void {
+    demo([
+        'demo.sandbox.driver' => 'scoped',
+        'demo.sandbox.models' => [SandboxedNote::class],
+        'demo.sandbox.prune_rows' => false,
+    ]);
+
+    $sandbox = Sandbox::create(['id' => (string) Str::uuid(), 'expires_at' => CarbonImmutable::now()->subMinute()]);
+
+    DB::table('demo_notes')->insert(['body' => 'theirs', 'demo_sandbox_id' => $sandbox->id]);
+
+    $this->artisan('demo:sandbox:prune')->assertSuccessful();
+
+    expect(DB::table('demo_notes')->count())->toBe(2);
+});
+
+/**
+ * A soft delete would leave the row in the table still carrying a sandbox id no
+ * live sandbox matches — unreachable, counted, and exactly the state purging
+ * exists to end. So the purger forces it, and collects what is already binned.
+ */
+it('really removes the rows of a model that only soft-deletes', function (): void {
+    demo(['demo.sandbox.driver' => 'scoped', 'demo.sandbox.models' => [SandboxedDraft::class]]);
+
+    $sandbox = Sandbox::create(['id' => (string) Str::uuid(), 'expires_at' => CarbonImmutable::now()->subMinute()]);
+
+    DB::table('demo_drafts')->insert([
+        ['body' => 'theirs', 'demo_sandbox_id' => $sandbox->id, 'deleted_at' => null],
+        ['body' => 'already binned', 'demo_sandbox_id' => $sandbox->id, 'deleted_at' => CarbonImmutable::now()],
+        ['body' => 'the baseline', 'demo_sandbox_id' => null, 'deleted_at' => null],
+    ]);
+
+    $this->artisan('demo:sandbox:prune')->assertSuccessful();
+
+    expect(DB::table('demo_drafts')->count())->toBe(1)
+        ->and(DB::table('demo_drafts')->value('body'))->toBe('the baseline');
+});
+
+/*
+ * A class on the list that is not marked cannot be purged, so its rows would be
+ * left behind on every clear and every prune. demo:doctor reports it properly;
+ * this is the signal for the operator who never ran it.
+ */
+it('says so rather than silently leaving a model it cannot purge', function (): void {
+    demo(['demo.sandbox.driver' => 'scoped', 'demo.sandbox.models' => [DemoUser::class]]);
+
+    Log::shouldReceive('channel')->andReturnSelf();
+    Log::shouldReceive('warning')->once()->withArgs(
+        fn (string $message, array $context): bool => str_contains($message, 'left behind')
+            && $context['class'] === DemoUser::class,
+    );
+
+    app(Purger::class)->purge('whatever');
 });

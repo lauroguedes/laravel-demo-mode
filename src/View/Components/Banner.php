@@ -132,6 +132,7 @@ class Banner extends Component
                 label: $base->label,
                 cta: $base->cta,
                 resetUrl: $base->resetUrl,
+                resetScope: $base->resetScope,
             ) : null;
         }
 

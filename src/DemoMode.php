@@ -282,6 +282,7 @@ class DemoMode
                 ? ['label' => $cta['label'], 'url' => $cta['url']]
                 : null,
             resetUrl: $this->onDemandUrl(),
+            resetScope: $this->onDemandScope(),
         );
     }
 
@@ -302,6 +303,25 @@ class DemoMode
      * configurable too, and a demo whose reset route was renamed should not lose
      * its button to a RouteNotFoundException on every page.
      */
+    /**
+     * What the on-demand reset actually resets here: 'sandbox' or 'everything'.
+     *
+     * 'auto' asks the sandbox driver, which is the answer that needs no thought
+     * at a call site: a scoped demo already gives each visitor a corner of their
+     * own, so clearing that is what "start over" means to them — and the whole
+     * installation is the scheduler's job, not a stranger's.
+     */
+    public function onDemandScope(): string
+    {
+        $configured = $this->config->string('on_demand.scope', 'auto');
+
+        if ($configured === 'sandbox' || $configured === 'everything') {
+            return $configured;
+        }
+
+        return $this->config->scoped() ? 'sandbox' : 'everything';
+    }
+
     public function onDemandUrl(): ?string
     {
         if ($this->disabled()

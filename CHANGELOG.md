@@ -5,6 +5,37 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.3.0 - 2026-09-24
+
+### Added
+
+- **On a scoped demo, the reset button clears the visitor's own rows** rather
+  than rebuilding the installation. The scheduler already rebuilds everything on
+  a cycle, and a stranger pressing a button should not take everybody else's
+  session with it. Instant: no lock, no maintenance mode, no queue and no
+  cooldown, because none of those are about a visitor tidying up after
+  themselves. The button says "Clear what you created" rather than "Rebuild the
+  demonstration", because those are different promises.
+
+  `on_demand.scope` decides — `auto` (the driver picks), `sandbox` or
+  `everything`. `on_demand.sandbox_throttle` is the looser limit for it, and
+  `SandboxCleared` fires with the id and the row count.
+
+- `demo:doctor` errors when `on_demand.scope` is `sandbox` on a demo that is not
+  scoped, because the button then deletes nothing and tells the visitor it
+  worked. Not rescued at runtime by falling back: the other meaning of that
+  button rebuilds the whole installation, and quietly promoting a typo into that
+  would be the worst thing this package could do.
+
+### Changed
+
+- **Pruning an expired sandbox now deletes the rows that belonged to it.** It
+  used to delete the sandbox and leave them: carrying an id no live sandbox
+  matched, unreachable by every visitor, carried by every scoped query's index,
+  and alive until the next full reset. The reason given for that — nothing could
+  know which tables an application had marked — stopped being true when
+  `sandbox.models` arrived. Set `sandbox.prune_rows` false to go back to it.
+
 ## 1.2.0 - 2026-09-24
 
 ### Added

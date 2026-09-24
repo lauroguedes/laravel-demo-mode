@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Events\SandboxExpired;
 
 /**
@@ -43,6 +44,21 @@ class Sandbox extends Model
     protected $keyType = 'string';
 
     protected $guarded = [];
+
+    /**
+     * Whether a class is actually marked as belonging to a sandbox.
+     *
+     * Asked by the purger, which skips what it cannot safely delete from, and by
+     * demo:doctor, which reports it. They had the check written out separately
+     * and had already drifted — the sort of pair where one grows a rule and the
+     * other does not, and the consequence is rows left behind in silence.
+     *
+     * @param  class-string  $class
+     */
+    public static function marks(string $class): bool
+    {
+        return in_array(BelongsToSandbox::class, class_uses_recursive($class), true);
+    }
 
     /**
      * The table, created from one definition.
@@ -92,6 +108,19 @@ class Sandbox extends Model
      */
     protected function pruning(): void
     {
+        /*
+         * The rows go first, while the sandbox that explains them still exists.
+         * Deleting the sandbox alone left them behind carrying an id that
+         * matched nothing — no visitor could reach them, every scoped query's
+         * index still carried them, and only a full reset cleared them.
+         *
+         * Off by a config key for the application that reads across sandboxes
+         * itself, through withoutSandbox(), and would notice them going.
+         */
+        if (app(Configuration::class)->boolean('sandbox.prune_rows', true)) {
+            app(Purger::class)->purge($this->id);
+        }
+
         event(new SandboxExpired($this->id));
     }
 

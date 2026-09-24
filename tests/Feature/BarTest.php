@@ -119,6 +119,32 @@ describe('the reset button', function (): void {
             ->and($payload['token'])->toBeNull();
     });
 
+    /*
+     * The button keeps a different promise on a scoped demo, so it has to make a
+     * different one. "Rebuild the demonstration" on a control that clears one
+     * visitor's rows would be the banner lying again, in a smaller place.
+     */
+    it('says what it will actually do on a scoped demo', function (): void {
+        $payload = state(bar([
+            'demo.on_demand.enabled' => true,
+            'demo.sandbox.driver' => 'scoped',
+        ]));
+
+        expect($payload['strings']['reset'])->toBe('Clear what you created')
+            ->and($payload['strings']['confirm'])->toBe('Clear everything you created?')
+            ->and($payload['strings']['confirmYes'])->toBe('Clear');
+    });
+
+    it('says it rebuilds everything when that is what it does', function (): void {
+        $payload = state(bar([
+            'demo.on_demand.enabled' => true,
+            'demo.sandbox.driver' => 'shared',
+        ]));
+
+        expect($payload['strings']['reset'])->toBe('Rebuild the demonstration')
+            ->and($payload['strings']['confirmYes'])->toBe('Rebuild');
+    });
+
     it('can be turned off without turning the route off', function (): void {
         $payload = state(bar([
             'demo.on_demand.enabled' => true,

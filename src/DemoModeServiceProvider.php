@@ -38,6 +38,7 @@ use LauroGuedes\DemoMode\Reset\Guards\HostIsAllowed;
 use LauroGuedes\DemoMode\Reset\Guards\NotProduction;
 use LauroGuedes\DemoMode\Restrictions\Pipeline as Restrictions;
 use LauroGuedes\DemoMode\Sandbox\Manager as SandboxManager;
+use LauroGuedes\DemoMode\Sandbox\Purger;
 use LauroGuedes\DemoMode\Support\Options;
 use LauroGuedes\DemoMode\View\Components\Banner;
 use LauroGuedes\DemoMode\View\Components\Credentials as CredentialsComponent;
@@ -105,6 +106,13 @@ class DemoModeServiceProvider extends ServiceProvider
          * because a test makes two requests against one container too.
          */
         $this->app->scoped(SandboxManager::class);
+
+        /*
+         * Singleton because pruning resolves it once per expired sandbox, and an
+         * unbound class is rebuilt by reflection every time. It holds only the
+         * Configuration singleton, so there is nothing per-request in it.
+         */
+        $this->app->singleton(Purger::class);
 
         $this->app->bind(GuardChain::class, static fn (Container $app): GuardChain => new GuardChain([
             $app->make(DemoModeIsEnabled::class),
@@ -256,8 +264,23 @@ class DemoModeServiceProvider extends ServiceProvider
             return;
         }
 
-        RateLimiter::for('demo-mode-reset', static function (Request $request) use ($config): Limit {
-            $throttle = $config->array('on_demand.throttle');
+        /*
+         * Resolved here and captured, so the closure can stay static. A limiter
+         * lives for the life of the application, and one bound to $this would
+         * hold the provider with it — the same reason Restrictions\BlockPrivileged-
+         * Accounts says so about its listeners.
+         */
+        $demo = $this->app->make(DemoMode::class);
+
+        RateLimiter::for('demo-mode-reset', static function (Request $request) use ($config, $demo): Limit {
+            /*
+             * Two different actions behind one route, so two different limits.
+             * Rebuilding the server is worth one an hour; clearing your own rows
+             * is not, and reusing that limit made the scoped button useless.
+             */
+            $throttle = $demo->onDemandScope() === 'sandbox'
+                ? $config->array('on_demand.sandbox_throttle')
+                : $config->array('on_demand.throttle');
 
             $limit = Limit::perMinutes(
                 max(1, Options::integer($throttle['minutes'] ?? null, 60)),

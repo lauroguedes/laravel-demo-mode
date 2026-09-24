@@ -33,6 +33,16 @@ return [
         'confirm_yes' => 'Rebuild',
         'cancel' => 'Cancel',
         'working' => 'Rebuilding the demonstration…',
+        /*
+         | What the button says when it clears one visitor's sandbox rather than
+         | rebuilding the installation. Two different promises, so two sets of
+         | words rather than one hedged between them.
+         */
+        'reset_sandbox' => 'Clear what you created',
+        'confirm_sandbox' => 'Clear everything you created?',
+        'confirm_yes_sandbox' => 'Clear',
+        'working_sandbox' => 'Clearing…',
+
         'failed' => 'That did not work. Try again in a moment.',
     ],
 
@@ -46,6 +56,7 @@ return [
 
     'reset' => [
         'queued' => 'The demonstration is being rebuilt. Give it a moment, then reload.',
+        'sandbox_cleared' => 'Everything you created has been removed.',
         'done' => 'The demonstration has been rebuilt.',
     ],
 

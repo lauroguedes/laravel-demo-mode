@@ -15,11 +15,11 @@ use LauroGuedes\DemoMode\Sandbox\Sandbox;
  * this the table grows for as long as the demo is up, and so does every scoped
  * query's index.
  *
- * Deletes only what has expired. The rows a visitor created keep their sandbox id
- * and are removed by the next reset along with everything else — this command
- * does not go looking for them, because it has no way to know which tables an
- * application marked and a command that guessed would be a command that deleted
- * the wrong thing.
+ * Deletes only what has expired, and the rows that belonged to it. It used to
+ * leave those behind, on the reasoning that it had no way to know which tables
+ * an application had marked — which stopped being true when demo.sandbox.models
+ * arrived. The rows it left were reachable by nobody and carried by every index
+ * until the next full reset. Set sandbox.prune_rows false to go back to that.
  *
  * The deleting itself is Laravel's model:prune, so it chunks. What this adds is
  * the one thing that command cannot know: that a demo sharing its data has no

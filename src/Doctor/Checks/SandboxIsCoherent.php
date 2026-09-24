@@ -9,7 +9,6 @@ use Illuminate\Database\Schema\Builder as SchemaBuilder;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\Contracts\RunsOnDemosOnly;
 use LauroGuedes\DemoMode\Doctor\Finding;
-use LauroGuedes\DemoMode\Sandbox\BelongsToSandbox;
 use LauroGuedes\DemoMode\Sandbox\Sandbox;
 use Throwable;
 
@@ -38,7 +37,7 @@ final readonly class SandboxIsCoherent implements RunsOnDemosOnly
     public function run(): array
     {
         if (! $this->config->scoped()) {
-            return [];
+            return $this->resetHasSomethingToClear();
         }
 
         return [
@@ -46,6 +45,36 @@ final readonly class SandboxIsCoherent implements RunsOnDemosOnly
             ...$this->modelsAreDeclared(),
             ...$this->modelsAreMarked(),
         ];
+    }
+
+    /**
+     * The one incoherence that lives on a demo which is *not* scoped.
+     *
+     * "on_demand.scope => sandbox" on a shared demo points the button at a
+     * sandbox that can never exist, so pressing it deletes nothing and answers
+     * that everything the visitor created has been removed. A control that
+     * reports success for doing nothing is worse than one that is missing.
+     *
+     * An error rather than a warning, and deliberately not fixed at runtime by
+     * falling back: the other meaning of that button rebuilds the whole
+     * installation, and quietly upgrading "clear my rows" into that would be the
+     * worst thing this package could do with a typo.
+     *
+     * @return list<Finding>
+     */
+    private function resetHasSomethingToClear(): array
+    {
+        if (! $this->config->boolean('on_demand.enabled')
+            || $this->config->string('on_demand.scope', 'auto') !== 'sandbox') {
+            return [];
+        }
+
+        return [Finding::error(
+            'sandbox',
+            'demo.on_demand.scope is "sandbox" but the sandbox driver is not "scoped", so the reset button has '
+                .'nothing to clear. It deletes nothing and tells the visitor it worked.',
+            'Set demo.sandbox.driver to "scoped", or demo.on_demand.scope to "everything" or "auto".',
+        )];
     }
 
     /**
@@ -115,7 +144,7 @@ final readonly class SandboxIsCoherent implements RunsOnDemosOnly
      */
     private function check(string $class): array
     {
-        if (! in_array(BelongsToSandbox::class, class_uses_recursive($class), true)) {
+        if (! Sandbox::marks($class)) {
             return [Finding::error('sandbox', sprintf(
                 '[%s] is listed as sandboxed but does not use BelongsToSandbox, so visitors see each other\'s rows '
                     .'in it while the rest of the demo looks isolated.',

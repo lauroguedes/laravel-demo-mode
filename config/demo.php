@@ -505,6 +505,26 @@ return [
 
         'route' => '/demo/reset',
 
+        /*
+         | DEMO_ON_DEMAND_SCOPE: auto | sandbox | everything
+         |
+         | What the button actually resets.
+         |
+         | 'sandbox'     deletes the rows this visitor created and leaves the
+         |               installation alone. Instant, and nobody else notices.
+         |               Needs the scoped sandbox driver.
+         |
+         | 'everything'  rebuilds the whole demonstration, the way the scheduler
+         |               does. Everybody's session goes with it, which is why the
+         |               cooldown and the lock below exist.
+         |
+         | 'auto'        'sandbox' when the sandbox driver is scoped, and
+         |               'everything' when it is not. The default, because a
+         |               scoped demo already has a per-visitor thing to clear and
+         |               the scheduled reset already rebuilds the rest.
+         */
+        'scope' => env('DEMO_ON_DEMAND_SCOPE', 'auto'),
+
         'name' => 'demo.reset',
 
         'middleware' => ['web'],
@@ -514,6 +534,14 @@ return [
          | it: attempts, then minutes.
          */
         'throttle' => ['attempts' => 1, 'minutes' => 60],
+
+        /*
+         | And the limit for clearing your own sandbox, which is a handful of
+         | DELETEs against rows you made rather than a rebuild of the server.
+         | Loose on purpose: the limit above would let a visitor tidy up once an
+         | hour, which is not a feature.
+         */
+        'sandbox_throttle' => ['attempts' => 10, 'minutes' => 1],
 
         /*
          | How the throttle counts a visitor: 'ip', 'session' or 'global'.
@@ -606,6 +634,16 @@ return [
          | When to prune. Registered by the package, like the reset schedule.
          */
         'prune' => '*/15 * * * *',
+
+        /*
+         | Whether pruning also deletes the rows that belonged to the sandbox.
+         |
+         | On, because the alternative is rows nobody can reach: their sandbox is
+         | gone, so no visitor's query matches them, and they sit in the table
+         | until the next full reset. Turn it off only if your own code reads
+         | across sandboxes with withoutSandbox() and would miss them.
+         */
+        'prune_rows' => (bool) env('DEMO_SANDBOX_PRUNE_ROWS', true),
 
     ],
 

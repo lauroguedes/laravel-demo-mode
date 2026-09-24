@@ -32,6 +32,14 @@ return new class extends Migration
             $table->string('demo_sandbox_id')->nullable()->index();
         });
 
+        /* A marked model that also soft-deletes, which the purger treats apart. */
+        Schema::create('demo_drafts', function (Blueprint $table): void {
+            $table->id();
+            $table->string('body');
+            $table->string('demo_sandbox_id')->nullable()->index();
+            $table->softDeletes();
+        });
+
         Schema::create('demo_sandboxes', function (Blueprint $table): void {
             $table->string('id')->primary();
             $table->timestamp('expires_at')->nullable()->index();

@@ -1,8 +1,18 @@
 # Reset on demand
 
-An HTTP route that rebuilds the demo. "I broke it, let me start over" is a real
-thing visitors want, and this is a route that hands an anonymous stranger a
-`migrate:fresh` — so it is off by default and the controls are the feature.
+An HTTP route for "I broke it, let me start over" — a real thing visitors want.
+
+**What it resets depends on the sandbox driver.** On a `scoped` demo it clears
+the visitor's own rows and leaves the installation alone, which is cheap and
+costs nobody else anything; see
+[sandbox.md](sandbox.md#letting-a-visitor-start-over). Everywhere else it
+rebuilds the whole demonstration — a route that hands an anonymous stranger a
+`migrate:fresh` — so it is off by default and the rest of this page is the
+controls that make it survivable.
+
+```php
+'on_demand' => ['scope' => 'auto'],   // 'sandbox' or 'everything' to decide it yourself
+```
 
 ```php
 'on_demand' => [

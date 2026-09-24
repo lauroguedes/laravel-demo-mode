@@ -360,3 +360,34 @@ it('says nothing when read-only excepts the reset route', function (): void {
 
     expect(findings())->not->toContain('on-demand-reset:error');
 });
+
+/*
+ * A button that reports success for doing nothing. The runtime deliberately does
+ * not rescue this by falling back, because the other meaning of that button
+ * rebuilds the installation.
+ */
+it('errors when the reset button is pointed at a sandbox that cannot exist', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.scope' => 'sandbox',
+        'demo.sandbox.driver' => 'shared',
+    ]);
+
+    $this->artisan('demo:doctor')
+        ->expectsOutputToContain('nothing to clear')
+        ->assertFailed();
+});
+
+/*
+ * The exit code is not the assertion: turning on_demand on brings its own
+ * findings, and this is about one of them being absent.
+ */
+it('says nothing when the button and the driver agree', function (): void {
+    demo([
+        'demo.on_demand.enabled' => true,
+        'demo.on_demand.scope' => 'auto',
+        'demo.sandbox.driver' => 'shared',
+    ]);
+
+    $this->artisan('demo:doctor')->doesntExpectOutputToContain('nothing to clear');
+});

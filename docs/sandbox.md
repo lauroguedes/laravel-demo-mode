@@ -149,10 +149,50 @@ for as long as the demo is up, and so does every scoped query's index.
 `SandboxExpired` fires for each one pruned, which is the seam for anything kept
 per visitor outside the database — an uploaded file, a search index entry.
 
-The rows a visitor created are **not** deleted by pruning. They keep their
-sandbox id and go with the next reset, along with everything else. Pruning does
-not go looking for them, because it has no way to know which tables an application
-marked and a command that guessed would delete the wrong thing.
+Pruning deletes the rows that belonged to the sandbox as well. It did not, once,
+on the reasoning that nothing could know which tables an application had marked —
+which stopped being true the moment `sandbox.models` existed, and `demo:doctor`
+already refuses a class on that list that does not carry the trait. What the old
+behaviour left behind was rows carrying an id no live sandbox matched: unreachable
+by every visitor, carried by every scoped query's index, alive until the next full
+reset.
+
+```php
+'prune_rows' => true,
+```
+
+Turn it off if your own code reads across sandboxes with `withoutSandbox()` — an
+admin screen, a total — and would notice them going.
+
+## Letting a visitor start over
+
+On a scoped demo the on-demand reset clears **the visitor's own rows** rather
+than rebuilding the installation:
+
+```php
+'on_demand' => ['enabled' => true],
+'sandbox'   => ['driver' => 'scoped'],
+```
+
+That is `on_demand.scope => 'auto'`, the default, and it is the shape the two
+features have when they are both on. The scheduler already rebuilds everything on
+a cycle; a stranger pressing a button should not, and on a demo more than one
+person is looking at, doing so throws away whatever everybody else was partway
+through. Clearing their own corner costs nobody anything.
+
+So none of the machinery around the other reset applies. No lock — two visitors
+clearing their own rows do not collide. No maintenance mode — the installation is
+not going anywhere. No queue — it is a handful of `DELETE`s. And no cooldown,
+because that limit counts rebuilds of the server, not a visitor tidying up after
+themselves. The throttle stays, loosened: `on_demand.sandbox_throttle`.
+
+The button says so. It reads "Clear what you created" here and "Rebuild the
+demonstration" on a shared demo, because those are different promises.
+
+`SandboxCleared` fires with the id and the number of rows, for whatever you keep
+per visitor outside the database.
+
+Set `on_demand.scope` to `everything` or `sandbox` to decide it yourself.
 
 ## What the scope does not cover
 

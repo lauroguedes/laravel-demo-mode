@@ -10,10 +10,14 @@ use Illuminate\Contracts\Bus\Dispatcher as Bus;
 use Illuminate\Http\Request;
 use LauroGuedes\DemoMode\Configuration;
 use LauroGuedes\DemoMode\DemoMode;
+use LauroGuedes\DemoMode\Events\SandboxCleared;
 use LauroGuedes\DemoMode\Exceptions\ResetInProgress;
 use LauroGuedes\DemoMode\Exceptions\ResetRefused;
 use LauroGuedes\DemoMode\Jobs\ResetTheDemo;
 use LauroGuedes\DemoMode\Reset\Runner;
+use LauroGuedes\DemoMode\Sandbox\Manager as SandboxManager;
+use LauroGuedes\DemoMode\Sandbox\Purger;
+use LauroGuedes\DemoMode\Sandbox\Sandbox;
 use LauroGuedes\DemoMode\Support\Options;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -24,8 +28,14 @@ use Symfony\Component\HttpFoundation\Response;
  * migrate:fresh. It is off by default, and the controls around it are the
  * feature rather than an afterthought.
  *
- * Worth saying plainly, because the route's name does not: this resets the whole
- * demonstration, not the visitor's own corner of it. Whatever anybody else was
+ * What it resets depends on the sandbox driver, and demo.on_demand.scope can say
+ * so outright. On a scoped demo it clears the visitor's own corner, which is
+ * what "start over" means to them and costs nobody else anything. Everywhere
+ * else it rebuilds the whole demonstration, and the rest of this class is about
+ * making that safe.
+ *
+ * Worth saying plainly about that second case, because the route's name does not:
+ * it resets the whole demonstration, not the visitor's own corner of it. Whatever anybody else was
  * partway through goes with it. On a demo that more than one person looks at,
  * the per-visitor sandbox is the thing that actually wants building; this is for
  * a single-visitor playground somebody has got stuck in.
@@ -47,8 +57,12 @@ class ResetController
         private readonly Configuration $config,
     ) {}
 
-    public function __invoke(Request $request, Bus $bus, Runner $runner): Response
+    public function __invoke(Request $request, Bus $bus, Runner $runner, SandboxManager $sandboxes, Purger $purger): Response
     {
+        if ($this->demo->onDemandScope() === 'sandbox') {
+            return $this->clearSandbox($request, $sandboxes, $purger);
+        }
+
         $waitFor = $this->cooldownRemaining();
 
         if ($waitFor > 0) {
@@ -80,6 +94,31 @@ class ResetController
         }
 
         return $this->respond($request, Response::HTTP_OK, (string) trans('demo::demo.reset.done'));
+    }
+
+    /**
+     * Throw away what this visitor made, and nothing else.
+     *
+     * None of the machinery the other path needs applies here. There is no lock,
+     * because two visitors clearing their own corners do not collide. There is
+     * no maintenance mode, because the installation is not going anywhere. There
+     * is no queue, because it is a handful of DELETEs rather than a rebuild. And
+     * there is no cooldown: that limit counts rebuilds of the server, and these
+     * are the visitor's own rows.
+     *
+     * A visitor who has not created anything has no sandbox, and this is a
+     * no-op rather than an error — pressing "start over" when there is nothing
+     * to start over from should not read as a failure.
+     */
+    private function clearSandbox(Request $request, SandboxManager $sandboxes, Purger $purger): Response
+    {
+        $sandbox = $sandboxes->current();
+
+        $rows = $sandbox instanceof Sandbox ? $purger->purge($sandbox->id) : 0;
+
+        event(new SandboxCleared($sandbox?->id, $rows));
+
+        return $this->respond($request, Response::HTTP_OK, (string) trans('demo::demo.reset.sandbox_cleared'));
     }
 
     /**

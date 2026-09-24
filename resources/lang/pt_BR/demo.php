@@ -29,6 +29,16 @@ return [
         'confirm_yes' => 'Reconstruir',
         'cancel' => 'Cancelar',
         'working' => 'Reconstruindo a demonstração…',
+        /*
+         | What the button says when it clears one visitor's sandbox rather than
+         | rebuilding the installation. Two different promises, so two sets of
+         | words rather than one hedged between them.
+         */
+        'reset_sandbox' => 'Limpar o que você criou',
+        'confirm_sandbox' => 'Limpar tudo que você criou?',
+        'confirm_yes_sandbox' => 'Limpar',
+        'working_sandbox' => 'Limpando…',
+
         'failed' => 'Não funcionou. Tente de novo em instantes.',
     ],
 
@@ -42,6 +52,7 @@ return [
 
     'reset' => [
         'queued' => 'A demonstração está sendo reconstruída. Aguarde um instante e recarregue.',
+        'sandbox_cleared' => 'Tudo que você criou foi removido.',
         'done' => 'A demonstração foi reconstruída.',
     ],
 

@@ -6,6 +6,13 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 
+/*
+ * Every test here is about the 'bare' style, pinned rather than inherited: the
+ * package's own default is 'pill', and a test that reads the ambient default is
+ * a test that changes meaning when the default does.
+ */
+beforeEach(fn () => Config::set('demo.banner.style', 'bare'));
+
 /**
  * Safe to put in a layout unconditionally. If it rendered anything on a
  * non-demo, every application would have to wrap it in @demo, and the one that

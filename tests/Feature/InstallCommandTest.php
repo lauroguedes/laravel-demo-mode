@@ -13,12 +13,30 @@ use Illuminate\Support\Facades\File;
 beforeEach(function (): void {
     $this->example = base_path('.env.example');
     $this->restore = File::exists($this->example) ? File::get($this->example) : null;
+
+    /*
+     * demo:install also publishes the config and the seeder into the testbench
+     * application, and those files outlive the process. One left behind on a
+     * developer's machine shadowed the package's own config for two days: the
+     * banner's default style changed, every test here kept reading the stale
+     * published copy, and only CI — which starts clean — saw the failure.
+     */
+    $this->published = [
+        config_path('demo.php'),
+        database_path('seeders/DemoSeeder.php'),
+    ];
+
+    $this->existed = array_filter($this->published, File::exists(...));
 });
 
 afterEach(function (): void {
     is_string($this->restore)
         ? File::put($this->example, $this->restore)
         : File::delete($this->example);
+
+    foreach (array_diff($this->published, $this->existed) as $path) {
+        File::delete($path);
+    }
 });
 
 it('appends the keys to an env example that has none', function (): void {

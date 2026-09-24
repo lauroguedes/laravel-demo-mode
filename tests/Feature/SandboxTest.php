@@ -88,6 +88,33 @@ it('keeps two visitors out of each other\'s notes', function (): void {
  * somebody else's rows — otherwise the global scope is an access-control
  * decision made from user input.
  */
+/**
+ * The sandbox separates what visitors create. It does not copy what the seeder
+ * made, so the baseline stays one shared set of rows — and a visitor who deletes
+ * one has deleted it for everybody until the next reset.
+ *
+ * Asserted rather than left implied, because it is the thing people assume
+ * isolation means. guards.protected and guards.read_only are the answer if the
+ * seeded rows must survive a visitor; the reset cycle is the other half.
+ */
+it('does not isolate the seeded baseline from the visitor who deletes it', function (): void {
+    Route::middleware([EncryptCookies::class, AddQueuedCookiesToResponse::class, StartSession::class, 'demo.sandbox'])
+        ->delete('/notes', function (): array {
+            SandboxedNote::where('body', 'A seeded note')->delete();
+
+            return ['notes' => SandboxedNote::pluck('body')->all()];
+        });
+
+    /* One visitor, with a sandbox of their own, removes a seeded row. */
+    $this->postJson('/notes', ['body' => 'mine'])->assertOk();
+    $this->deleteJson('/notes')->assertJson(['notes' => ['mine']]);
+
+    /* And it is gone for somebody who never had one. */
+    $this->flushSession();
+
+    $this->getJson('/notes')->assertJson(['notes' => []]);
+});
+
 it('gives a forged identifier nothing but the baseline', function (): void {
     $this->postJson('/notes', ['body' => 'mine']);
 

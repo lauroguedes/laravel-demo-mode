@@ -255,9 +255,11 @@ every value is still on the page — the countdown stops ticking and the buttons
 stop doing anything. Publish the views and move the script into your own bundle
 if you want them back.
 
-Dismissal is stored in `sessionStorage` keyed to the next reset time, so a
-visitor who hides the banner sees it again after the data has been rebuilt rather
-than never again.
+Dismissal lasts for the page it happened on and nothing longer. A reload or a
+link brings the notice back, on purpose: it used to be remembered in
+`sessionStorage`, which survives a reload and is not cleared with the cache, so a
+visitor who hid it had no obvious way to get it back — and the sentence saying
+the data is temporary is the one thing on a demo that should be hard to lose.
 
 With `script => false` the dismiss and copy buttons are **not rendered at all**.
 They would do nothing when clicked, and a control that lies is worse than one

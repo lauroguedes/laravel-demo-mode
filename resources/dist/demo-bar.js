@@ -132,11 +132,13 @@
         }
         time { font-variant-numeric: tabular-nums; }
 
-        button {
+        button, .cta {
             font: inherit;
             color: inherit;
             border: 0;
             cursor: pointer;
+            /* The same curve as the bar around it. Only <button> carried this,
+               and the call to action is an <a>, so it sat square inside a pill. */
             border-radius: 999px;
             display: inline-flex;
             align-items: center;
@@ -216,13 +218,6 @@
             try {
                 this.state = JSON.parse(this.dataset.demoState || '{}');
             } catch (e) {
-                return;
-            }
-
-            this.key = this.state.nextResetAt ? `demo-mode:dismissed:${this.state.nextResetAt}` : null;
-
-            if (this.dismissed()) {
-                this.hide();
                 return;
             }
 
@@ -470,17 +465,17 @@
         /* ---- dismissal --------------------------------------------------- */
 
         /**
-         * Keyed to the next reset, so hiding it lasts until the data has been
-         * rebuilt rather than for ever.
+         * For this page, and nothing longer.
+         *
+         * It used to be remembered in sessionStorage, keyed to the next reset.
+         * That was worse than it sounds: sessionStorage survives a reload and is
+         * not touched by clearing the cache, so a visitor who dismissed the bar
+         * could not work out how to get it back — and the notice saying the data
+         * is temporary is the one thing on a demo that should be hard to lose.
+         *
+         * Dismissing it now means "move out of the way while I look at this".
+         * Reload, or follow a link, and it is back.
          */
-        dismissed() {
-            try {
-                return this.key !== null && sessionStorage.getItem(this.key) === '1';
-            } catch (e) {
-                return false;
-            }
-        }
-
         hide() {
             this.hidden = true;
             this.style.setProperty('display', 'none');
@@ -488,13 +483,6 @@
 
         dismiss() {
             this.hide();
-
-            try {
-                if (this.key) sessionStorage.setItem(this.key, '1');
-            } catch (e) {
-                /* Private browsing, or storage disabled. It stays hidden for
-                   this page and comes back on the next one. */
-            }
         }
     }
 

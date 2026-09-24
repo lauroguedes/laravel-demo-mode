@@ -161,6 +161,17 @@ model — `find()`, `findOrFail()`, route-model binding, relationships from an
 unmarked parent, eager loading, aggregates, `firstOrCreate()`. All of those are
 scoped correctly.
 
+**The baseline is shared, and it stays shared.** A visitor sees the seeded rows
+because those rows carry no sandbox id — and nothing stops them editing or
+deleting one. When they do, it changes for everybody until the next reset. There
+is no copy-on-write: the sandbox separates what visitors *create*, not what the
+seeder made.
+
+If the interesting part of your demo is deleting the sample data, either seed
+enough that one visitor's vandalism is not the whole screen, or reach for
+`guards.protected` and `guards.read_only` — which is what those are for. The
+reset cycle is the other half of the answer.
+
 What it does not see is a query that never touches Eloquent:
 
 ```php

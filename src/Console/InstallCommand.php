@@ -108,6 +108,18 @@ final class InstallCommand extends Command
             DEMO_CREDENTIALS_STORE=file
             DEMO_EMAIL=admin@demo.test
 
+            # The notice, so it can be dressed without a deployment. Every option
+            # is spelled out beside its key in config/demo.php.
+            # DEMO_BANNER=true
+            # DEMO_BANNER_STYLE=pill              # pill | bare
+            # DEMO_BANNER_VARIANT=warning         # warning | danger | info | success | neutral
+            # DEMO_BANNER_POSITION=bottom         # top | bottom
+            # DEMO_BANNER_LABEL=Demo
+            # DEMO_BANNER_DISMISSIBLE=true
+            # DEMO_BANNER_RESET_BUTTON=true
+            # DEMO_BANNER_CTA_LABEL="Deploy your own"
+            # DEMO_BANNER_CTA_URL=https://github.com/you/your-project
+
             ENV);
 
         $this->components->twoColumnDetail('.env.example', '<fg=green>added the DEMO_ keys</>');

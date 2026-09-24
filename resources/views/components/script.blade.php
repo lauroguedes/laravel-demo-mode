@@ -9,8 +9,11 @@
     separate key, and a page carrying both components emitted this twice. One
     occurrence, one key, one copy.
 
-    Dismissal is keyed to the next reset, so a visitor who hides the banner sees
-    it again after the data has been rebuilt rather than never again.
+    Dismissal lasts for the page it happened on and nothing longer. It used to be
+    remembered in sessionStorage, which survives a reload and is not cleared with
+    the cache — so a visitor who hid the banner could not work out how to get it
+    back, and the notice saying the data is temporary is the one thing on a demo
+    that should be hard to lose.
 
     This is the bare banner's copy of the countdown. The floating bar has its
     own in resources/dist/demo-bar.js, because it runs inside a shadow root from
@@ -25,26 +28,12 @@
 <script data-demo-script>
 (() => {
     const banner = document.querySelector('[data-demo-banner]');
-    const resetAt = banner?.dataset.demoResetAt;
-    const key = resetAt ? 'demo-mode:dismissed:' + resetAt : null;
-
-    try {
-        if (key && sessionStorage.getItem(key) === '1') {
-            banner.hidden = true;
-        }
-    } catch (e) {
-        /* Private browsing, or storage disabled. The banner simply stays. */
-    }
 
     document.addEventListener('click', (event) => {
         const dismiss = event.target.closest('[data-demo-dismiss]');
 
         if (dismiss && banner) {
             banner.hidden = true;
-
-            try {
-                if (key) sessionStorage.setItem(key, '1');
-            } catch (e) { /* nothing to do */ }
 
             return;
         }

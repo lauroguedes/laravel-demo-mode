@@ -5,6 +5,40 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.0 - 2026-09-24
+
+### Added
+
+- **Every visible part of the notice reads from the environment** —
+  `DEMO_BANNER`, `DEMO_BANNER_STYLE`, `_VARIANT`, `_LABEL`, `_POSITION`,
+  `_DISMISSIBLE`, `_RESET_BUTTON`, `_CTA_LABEL` and `_CTA_URL` — so one image can
+  serve staging and a public playground with different values. The allowed
+  options for each are written beside the key in `config/demo.php`, and
+  `demo:install` appends them to `.env.example` commented out.
+
+  A configuration published before this reads literals, so nothing changes until
+  you republish or copy the `env()` calls across.
+
+### Changed
+
+- **Dismissing the notice now lasts for that page and nothing longer.** It was
+  remembered in `sessionStorage`, keyed to the next reset — which survives a
+  reload and is not cleared with the browser cache, so a visitor who hid it had
+  no obvious way to bring it back. The sentence saying the data is temporary is
+  the one thing on a demo that should be hard to lose. Both styles changed.
+
+### Fixed
+
+- The pill's call to action is an `<a>`, and the rounding was only on `button`,
+  so it sat square inside a rounded bar.
+
+### Documentation
+
+- `docs/sandbox.md` says what the scoped driver does not do: the seeded baseline
+  is shared, and a visitor who edits or deletes one of those rows changes it for
+  everybody until the next reset. There is no copy-on-write. Now covered by a
+  test rather than left implied.
+
 ## 1.1.1 - 2026-09-24
 
 No change to the shipped code. `demo:install`'s test published a config into the

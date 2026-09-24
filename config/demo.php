@@ -354,9 +354,18 @@ return [
 
     'banner' => [
 
-        'enabled' => true,
+        /*
+         | Everything the visitor can see about the notice reads from the
+         | environment, so a demo can be dressed without a deployment: the same
+         | image serves staging and the public playground with different values.
+         |
+         | DEMO_BANNER=false               turn the notice off entirely
+         */
+        'enabled' => (bool) env('DEMO_BANNER', true),
 
         /*
+         | DEMO_BANNER_STYLE: pill | bare
+         |
          | 'pill'  a floating bar the package styles itself, identical in Blade,
          |         Livewire and Inertia because it renders inside a shadow root
          |         where nothing from your stylesheet reaches it. Needs "script"
@@ -367,28 +376,43 @@ return [
          |         notice to look like the rest of the application, or one under
          |         a policy that forbids the script.
          */
-        'style' => 'pill',
-
-        'variant' => 'warning',
+        'style' => env('DEMO_BANNER_STYLE', 'pill'),
 
         /*
-         | The short word on the pill's badge. Null leaves the badge off.
+         | DEMO_BANNER_VARIANT: warning | danger | info | success | neutral
+         |
+         | The pill's accent colour. For the bare style it is also the key looked
+         | up in "classes" below, so any name you put there works too.
          */
-        'label' => 'Demo',
+        'variant' => env('DEMO_BANNER_VARIANT', 'warning'),
+
+        /*
+         | DEMO_BANNER_LABEL: any short word, or empty for no badge
+         |
+         | The word on the pill's badge — "Demo", "Sandbox", "Playground".
+         */
+        'label' => env('DEMO_BANNER_LABEL', 'Demo'),
 
         /*
          | One link on the right of the pill — the repository, the pricing page,
-         | wherever a visitor who liked the demo should go next.
+         | wherever a visitor who liked the demo should go next. The URL is what
+         | turns it on; the label has a default, so one key is enough.
          |
-         |   'cta' => ['label' => 'Deploy your own', 'url' => 'https://github.com/…'],
+         | DEMO_BANNER_CTA_URL     where it goes
+         | DEMO_BANNER_CTA_LABEL   what it says
          */
-        'cta' => null,
+        'cta' => env('DEMO_BANNER_CTA_URL') === null ? null : [
+            'label' => (string) env('DEMO_BANNER_CTA_LABEL', 'Deploy your own'),
+            'url' => (string) env('DEMO_BANNER_CTA_URL'),
+        ],
 
         /*
+         | DEMO_BANNER_RESET_BUTTON: true | false
+         |
          | Whether the pill offers a rebuild button. Only ever shown when
          | "on_demand" below is enabled, and it asks before it does anything.
          */
-        'reset_button' => true,
+        'reset_button' => (bool) env('DEMO_BANNER_RESET_BUTTON', true),
 
         /*
          | Where the pill's script is served from. It is a route rather than a
@@ -398,7 +422,14 @@ return [
          */
         'asset_route' => '/demo-mode/bar.js',
 
-        'dismissible' => true,
+        /*
+         | DEMO_BANNER_DISMISSIBLE: true | false
+         |
+         | Whether the notice can be closed. Closing it lasts for that page and
+         | nothing longer — a reload or a link brings it back, on purpose: the
+         | sentence saying the data is temporary should not be losable.
+         */
+        'dismissible' => (bool) env('DEMO_BANNER_DISMISSIBLE', true),
 
         /*
          | Null uses the translation, with the time until the next reset worked
@@ -408,11 +439,13 @@ return [
         'message' => null,
 
         /*
-         | 'top' or 'bottom'. The pill floats clear of the content either way;
-         | the bare banner sits wherever you put the component and uses this only
-         | as a data attribute your stylesheet can read.
+         | DEMO_BANNER_POSITION: top | bottom
+         |
+         | The pill floats clear of the content either way; the bare banner sits
+         | wherever you put the component and uses this only as a data attribute
+         | your stylesheet can read.
          */
-        'position' => 'bottom',
+        'position' => env('DEMO_BANNER_POSITION', 'bottom'),
 
         /*
          | Class names by variant, for the 'bare' style only — the pill is inside

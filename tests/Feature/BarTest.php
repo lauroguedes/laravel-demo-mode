@@ -167,3 +167,53 @@ describe('the script route', function (): void {
         $this->get('/demo-mode/bar.js')->assertNotFound();
     });
 });
+
+describe('reading its appearance from the environment', function (): void {
+    /*
+     * The whole point of these keys is that a demo can be dressed without a
+     * deployment, so what matters is that the published config actually reaches
+     * env() rather than holding a literal.
+     */
+    it('takes the style, badge and accent from the environment', function (): void {
+        $config = withEnv([
+            'DEMO_BANNER_STYLE' => 'bare',
+            'DEMO_BANNER_VARIANT' => 'danger',
+            'DEMO_BANNER_LABEL' => 'Sandbox',
+            'DEMO_BANNER_POSITION' => 'top',
+        ]);
+
+        expect($config['banner'])
+            ->style->toBe('bare')
+            ->variant->toBe('danger')
+            ->label->toBe('Sandbox')
+            ->position->toBe('top');
+    });
+
+    it('turns the notice and its controls off from the environment', function (): void {
+        $config = withEnv([
+            'DEMO_BANNER' => 'false',
+            'DEMO_BANNER_DISMISSIBLE' => 'false',
+            'DEMO_BANNER_RESET_BUTTON' => 'false',
+        ]);
+
+        expect($config['banner'])
+            ->enabled->toBeFalse()
+            ->dismissible->toBeFalse()
+            ->reset_button->toBeFalse();
+    });
+
+    /* The URL is what turns the link on; a label on its own shows nothing. */
+    it('builds the call to action from two keys, and needs the url', function (): void {
+        expect(withEnv(['DEMO_BANNER_CTA_LABEL' => 'Ship it'])['banner']['cta'])->toBeNull();
+
+        expect(withEnv([
+            'DEMO_BANNER_CTA_LABEL' => 'Ship it',
+            'DEMO_BANNER_CTA_URL' => 'https://example.test',
+        ])['banner']['cta'])->toBe(['label' => 'Ship it', 'url' => 'https://example.test']);
+    });
+
+    it('defaults the call to action label when only the url is set', function (): void {
+        expect(withEnv(['DEMO_BANNER_CTA_URL' => 'https://example.test'])['banner']['cta'])
+            ->toBe(['label' => 'Deploy your own', 'url' => 'https://example.test']);
+    });
+});

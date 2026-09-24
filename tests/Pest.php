@@ -99,3 +99,44 @@ function freshSchema(): void
 
     test()->artisan('migrate:fresh', ['--force' => true]);
 }
+
+/**
+ * Load the package's own config/demo.php with these environment variables set.
+ *
+ * Written into the superglobals rather than through Env::getRepository(): the
+ * repository is immutable, so set() silently does nothing for a name the test
+ * runner has already defined, and a test that silently asserts the default is
+ * worse than no test.
+ *
+ * @param  array<string, string>  $variables
+ * @return array<string, mixed>
+ */
+function withEnv(array $variables): array
+{
+    $previous = [];
+
+    foreach ($variables as $name => $value) {
+        /* Both, because both are restored — a name present in only one of them
+           would otherwise be unset from the other on the way out. */
+        $previous[$name] = [$_ENV[$name] ?? null, $_SERVER[$name] ?? null];
+        $_ENV[$name] = $_SERVER[$name] = $value;
+    }
+
+    try {
+        return require __DIR__.'/../config/demo.php';
+    } finally {
+        foreach ($previous as $name => [$env, $server]) {
+            if ($env === null) {
+                unset($_ENV[$name]);
+            } else {
+                $_ENV[$name] = $env;
+            }
+
+            if ($server === null) {
+                unset($_SERVER[$name]);
+            } else {
+                $_SERVER[$name] = $server;
+            }
+        }
+    }
+}

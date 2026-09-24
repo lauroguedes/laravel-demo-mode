@@ -29,6 +29,9 @@ use Illuminate\Support\HtmlString;
  */
 final readonly class BannerState
 {
+    /**
+     * @param  array{label: string, url: string}|null  $cta
+     */
     public function __construct(
         public string $variant,
         public ?string $class,
@@ -37,6 +40,10 @@ final readonly class BannerState
         public ?string $message,
         public ?CarbonImmutable $nextResetAt,
         public ?string $resetsIn,
+        public string $style = 'bare',
+        public ?string $label = null,
+        public ?array $cta = null,
+        public ?string $resetUrl = null,
     ) {}
 
     /**
@@ -49,8 +56,8 @@ final readonly class BannerState
         }
 
         return $this->resetsIn === null
-            ? (string) trans('demo::demo.banner.without_countdown')
-            : (string) trans('demo::demo.banner.with_countdown', ['time' => $this->resetsIn]);
+            ? (string) trans($this->key('without_countdown'))
+            : (string) trans($this->key('with_countdown'), ['time' => $this->resetsIn]);
     }
 
     /**
@@ -78,7 +85,77 @@ final readonly class BannerState
             e($units['minute']),
             e($units['second']),
             e($this->resetsIn),
-        ), e((string) trans('demo::demo.banner.with_countdown', ['time' => $marker]))));
+        ), e((string) trans($this->key('with_countdown'), ['time' => $marker]))));
+    }
+
+    /**
+     * The translated sentence either side of the countdown.
+     *
+     * The bar builds its own elements, so it cannot be handed the HTML above —
+     * but it still must not assemble the sentence itself. Word order differs by
+     * language: "deleted in 20 minutes" and "apagado em 20 minutos" put the
+     * duration in the same place, "20分後に削除されます" does not. Splitting the
+     * translation on the marker keeps that decision in the translation file.
+     *
+     * Null when there is no countdown to wrap — a custom message, or a schedule
+     * that could not be read.
+     *
+     * @return array{before: string, after: string}|null
+     */
+    public function around(): ?array
+    {
+        if ($this->message !== null || ! $this->nextResetAt instanceof CarbonImmutable || $this->resetsIn === null) {
+            return null;
+        }
+
+        $marker = '__demo_countdown__';
+
+        $parts = explode($marker, (string) trans($this->key('with_countdown'), ['time' => $marker]), 2);
+
+        return ['before' => $parts[0], 'after' => $parts[1] ?? ''];
+    }
+
+    /**
+     * The same state in the shape the floating bar's element reads.
+     *
+     * Beside toArray() rather than composed in the view component, for the
+     * reason this class exists at all: the banner used to be shaped for Blade in
+     * one place and for Inertia in another, and the two drifted. A third shape
+     * assembled somewhere else would be the same mistake with a new name.
+     *
+     * Everything here is request-independent. The CSRF token is not, so it is
+     * the one field the component adds.
+     *
+     * @param  array{hour: string, minute: string, second: string}  $units
+     * @return array<string, mixed>
+     */
+    public function forBar(array $units): array
+    {
+        $around = $this->around();
+
+        return [
+            'variant' => $this->variant,
+            'position' => $this->position,
+            'dismissible' => $this->dismissible,
+            'label' => $this->label,
+            'cta' => $this->cta,
+            'message' => $this->text(),
+            'messageBefore' => $around['before'] ?? null,
+            'messageAfter' => $around['after'] ?? null,
+            'countdown' => $around === null ? null : $this->resetsIn,
+            'nextResetAt' => $this->nextResetAt?->toIso8601String(),
+            'units' => $units,
+            'resetUrl' => $this->resetUrl,
+            'strings' => [
+                'reset' => (string) trans('demo::demo.bar.reset'),
+                'confirm' => (string) trans('demo::demo.bar.confirm'),
+                'confirmYes' => (string) trans('demo::demo.bar.confirm_yes'),
+                'cancel' => (string) trans('demo::demo.bar.cancel'),
+                'working' => (string) trans('demo::demo.bar.working'),
+                'failed' => (string) trans('demo::demo.bar.failed'),
+                'dismiss' => (string) trans('demo::demo.banner.dismiss'),
+            ],
+        ];
     }
 
     /**
@@ -94,5 +171,19 @@ final readonly class BannerState
             'position' => $this->position,
             'next_reset_at' => $this->nextResetAt?->toIso8601String(),
         ];
+    }
+
+    /**
+     * The bar says less than the banner, and deliberately.
+     *
+     * A full-width strip has room for a sentence; a pill does not, and the first
+     * one rendered was 827 pixels of prose. Same fact, said in the shape it is
+     * being said in — which is a translation-file decision, not a substring one.
+     */
+    private function key(string $name): string
+    {
+        return $this->style === 'pill'
+            ? 'demo::demo.bar.'.$name
+            : 'demo::demo.banner.'.$name;
     }
 }

@@ -16,6 +16,26 @@ return [
         'units' => ['hour' => 'h', 'minute' => 'm', 'second' => 's'],
     ],
 
+    /*
+     | The floating bar. Its sentence is the banner's; these are the labels
+     | on the controls only it has.
+     */
+    'bar' => [
+        /*
+         | Shorter than the banner's sentence, because the bar is a pill and a
+         | pill full of prose is a pill the width of the screen.
+         */
+        'with_countdown' => 'Resets in :time',
+        'without_countdown' => 'Resets periodically',
+
+        'reset' => 'Rebuild the demonstration',
+        'confirm' => 'Rebuild the demonstration?',
+        'confirm_yes' => 'Rebuild',
+        'cancel' => 'Cancel',
+        'working' => 'Rebuilding the demonstration…',
+        'failed' => 'That did not work. Try again in a moment.',
+    ],
+
     'credentials' => [
         'heading' => 'Sign in with',
         'email' => 'Email',

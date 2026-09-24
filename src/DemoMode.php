@@ -12,6 +12,7 @@ use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Container\Container;
 use LauroGuedes\DemoMode\Credentials\Credential;
 use LauroGuedes\DemoMode\Credentials\Manager as Credentials;
+use LauroGuedes\DemoMode\Http\Controllers\AssetController;
 use LauroGuedes\DemoMode\Reset\ResetReport;
 use LauroGuedes\DemoMode\Reset\Runner;
 use LauroGuedes\DemoMode\Reset\Schedule;
@@ -258,6 +259,8 @@ class DemoMode
         $variant = $this->config->string('banner.variant', 'warning');
         $classes = $this->config->array('banner.classes');
 
+        $cta = $this->config->array('banner.cta');
+
         return new BannerState(
             variant: $variant,
             class: Options::string($classes[$variant] ?? $classes['default'] ?? null, '') ?: null,
@@ -266,7 +269,48 @@ class DemoMode
             message: $this->config->nullableString('banner.message'),
             nextResetAt: $this->nextResetAt(),
             resetsIn: $this->resetsIn(),
+            /*
+             * 'bare' rather than 'pill' when the key is absent, which is what an
+             * installation that published its config before the bar existed
+             * looks like. Upgrading a package should not change what a demo
+             * looks like until someone says so; the published config ships
+             * 'pill' so a new install gets it without asking.
+             */
+            style: $this->config->string('banner.style', 'bare') === 'pill' && $this->scripted() ? 'pill' : 'bare',
+            label: $this->config->nullableString('banner.label'),
+            cta: is_string($cta['label'] ?? null) && is_string($cta['url'] ?? null)
+                ? ['label' => $cta['label'], 'url' => $cta['url']]
+                : null,
+            resetUrl: $this->onDemandUrl(),
         );
+    }
+
+    /**
+     * The URL of the floating bar's script, cache-busted by its own contents.
+     */
+    public function barScriptUrl(): string
+    {
+        return url($this->config->string('banner.asset_route', '/demo-mode/bar.js'))
+            .'?v='.AssetController::version();
+    }
+
+    /**
+     * Where the bar's reset button posts, or null when there is nothing to post
+     * to.
+     *
+     * Built from the configured path rather than the route name: the name is
+     * configurable too, and a demo whose reset route was renamed should not lose
+     * its button to a RouteNotFoundException on every page.
+     */
+    public function onDemandUrl(): ?string
+    {
+        if ($this->disabled()
+            || ! $this->config->boolean('on_demand.enabled')
+            || ! $this->config->boolean('banner.reset_button', true)) {
+            return null;
+        }
+
+        return url($this->config->string('on_demand.route', '/demo/reset'));
     }
 
     /**

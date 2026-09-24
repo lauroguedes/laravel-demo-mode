@@ -5,6 +5,28 @@
 First release. Nothing to upgrade from — but if you already have a hand-rolled
 demo mode, the rest of this page is for you.
 
+## To 1.1
+
+Nothing to do. The floating bar is opt-in for an installation that already has a
+published `config/demo.php`: the `banner.style` key is absent there, and the code
+default is `bare`, so the notice keeps rendering exactly as it did.
+
+To adopt it, add the keys — `style`, `label`, `cta`, `reset_button`,
+`asset_route` — from the published config, or republish it with
+`--tag=demo-config --force` and re-apply your own settings.
+
+Two things to know before you do:
+
+- **Stop passing classes to `<x-demo-banner />`.** The pill styles itself inside
+  a shadow root, where a class name means nothing — but inherited properties do
+  cross, so `class="font-black"` renders the bar at weight 900.
+- **Under a Content-Security-Policy**, the pill's script is served from
+  `/demo-mode/bar.js`, so `script-src 'self'` covers it. The `bare` style's
+  script is inline and still needs a hash or a nonce.
+
+An Inertia application puts the component in its **root Blade view**, beside
+`@inertia`, rather than in a page component.
+
 ## Migrating off a hand-rolled demo mode
 
 Most projects that want this package already have some of it, written by hand and

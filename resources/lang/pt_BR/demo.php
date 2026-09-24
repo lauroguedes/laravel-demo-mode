@@ -12,6 +12,26 @@ return [
         'units' => ['hour' => 'h', 'minute' => 'min', 'second' => 's'],
     ],
 
+    /*
+     | A barra flutuante. A frase é a mesma do banner; estes são os rótulos
+     | dos controles que só ela tem.
+     */
+    'bar' => [
+        /*
+         | Shorter than the banner's sentence, because the bar is a pill and a
+         | pill full of prose is a pill the width of the screen.
+         */
+        'with_countdown' => 'Reinicia em :time',
+        'without_countdown' => 'Reinicia periodicamente',
+
+        'reset' => 'Reconstruir a demonstração',
+        'confirm' => 'Reconstruir a demonstração?',
+        'confirm_yes' => 'Reconstruir',
+        'cancel' => 'Cancelar',
+        'working' => 'Reconstruindo a demonstração…',
+        'failed' => 'Não funcionou. Tente de novo em instantes.',
+    ],
+
     'credentials' => [
         'heading' => 'Entre com',
         'email' => 'E-mail',

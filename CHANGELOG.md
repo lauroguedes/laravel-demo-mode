@@ -5,6 +5,35 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.0 - 2026-09-24
+
+### Added
+
+- **A floating bar the package styles itself** — `banner.style => 'pill'`. A
+  badge, a ticking countdown, an optional rebuild button, an optional link and a
+  dismiss control, rendered by a `<demo-mode-bar>` custom element inside a shadow
+  root. It looks the same in Blade, Livewire and Inertia without any of them
+  passing a class, which is what the bare banner could never do: the notice had
+  to be restyled per application, and in a Vue front end reimplemented outright.
+
+  Opt-in for an existing installation, whose published config has no `style` key
+  and keeps the bare banner. A fresh `demo:install` gets the pill.
+
+- `banner.label`, `banner.cta` and `banner.reset_button` for what the bar shows,
+  and `banner.asset_route` for where its script is served from.
+- A route serving that script, registered only for the pill. It is a route rather
+  than a published file so it cannot fall a version behind the payload it reads,
+  and rather than an inline block so `script-src 'self'` is enough for a strict
+  Content-Security-Policy.
+
+### Changed
+
+- The pill says less than the banner — "Resets in 20m" against a full sentence —
+  because a pill full of prose is a pill the width of the screen. Both come from
+  the translation files.
+- `BannerState` owns the bar's projection as well as the Inertia one, rather than
+  a third shape being assembled in the view component.
+
 ## 1.0.2 - 2026-09-23
 
 ### Fixed

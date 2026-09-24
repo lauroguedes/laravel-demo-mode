@@ -65,7 +65,7 @@ Demo::toArray();        // one payload for Blade, Livewire and Inertia
 
 ```blade
 {{-- Both render nothing when this is not a demo, so no wrapper is needed --}}
-<x-demo-banner />
+<x-demo-banner />   {{-- a floating bar the package styles itself --}}
 <x-demo-credentials />
 
 @notdemo

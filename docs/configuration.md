@@ -155,16 +155,39 @@ exactly which tables your application writes to on an ordinary request.
 Off by default. It puts a `migrate:fresh` behind an HTTP request, so every control
 around it matters — see [on-demand-reset.md](on-demand-reset.md).
 
+## `banner.style`
+
+```php
+'style' => 'pill',
+```
+
+`pill` is a floating bar the package styles itself, inside a shadow root, so it
+looks the same in Blade, Livewire and Inertia. `bare` is semantic markup with no
+styling, wearing the class names from `banner.classes`. Both render nothing at
+all when this is not a demo. See [frontend.md](frontend.md), which covers what a
+shadow root does and does not isolate.
+
+A configuration published before the pill existed has no `style` key, and the
+code default is `bare` — upgrading the package does not change what your demo
+looks like until you say so. A fresh `demo:install` publishes `pill`.
+
+`label` is the word on the badge, `cta` an optional link on the right, and
+`reset_button` whether the bar offers a rebuild when `on_demand` is on. The pill
+needs `script`; with it off, the style falls back to `bare`.
+
 ## `script`
 
 ```php
 'script' => true,
 ```
 
-The one small inline script: the ticking countdown, the banner's dismiss button,
-and copy-to-clipboard on the credentials component. Set it `false` under a strict
-Content-Security-Policy; the values stay on the page and the controls that would
-not work are not rendered at all.
+The ticking countdown, the banner's dismiss button, and copy-to-clipboard on the
+credentials component — inline for the `bare` style, and for the pill a single
+file served from `banner.asset_route` so that `script-src 'self'` is enough.
+
+Set it `false` under a policy that allows neither; the values stay on the page,
+the controls that would not work are not rendered at all, and the pill becomes
+the bare banner. Turning it off also unregisters the asset route.
 
 ## `log`
 

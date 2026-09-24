@@ -26,6 +26,7 @@ use LauroGuedes\DemoMode\Credentials\StoreFactory;
 use LauroGuedes\DemoMode\Guards\ConnectionGuard;
 use LauroGuedes\DemoMode\Guards\ModelGuard;
 use LauroGuedes\DemoMode\Guards\ProtectedRecords;
+use LauroGuedes\DemoMode\Http\Controllers\AssetController;
 use LauroGuedes\DemoMode\Http\Controllers\ResetController;
 use LauroGuedes\DemoMode\Http\Middleware\AttachSandbox;
 use LauroGuedes\DemoMode\Http\Middleware\EnsureDemoHost;
@@ -127,6 +128,7 @@ class DemoModeServiceProvider extends ServiceProvider
         $this->app->make(Restrictions::class)->apply();
 
         $this->registerWriteGuards();
+        $this->registerBarAsset();
         $this->registerOnDemandReset();
         $this->registerSandbox();
         $this->registerCommands([ResetCommand::class, SnapshotCommand::class]);
@@ -283,6 +285,29 @@ class DemoModeServiceProvider extends ServiceProvider
                 'throttle:demo-mode-reset',
             ])
             ->name($config->string('on_demand.name', 'demo.reset'));
+    }
+
+    /**
+     * The floating bar's script, on its own route.
+     *
+     * No middleware at all, not even 'web': it is a static file, and running it
+     * through the session middleware would start a session for every asset
+     * request and set a cookie on a response that should be cached for a year.
+     *
+     * Registered only when the bar is the style in use, so an installation on the
+     * bare banner adds no route.
+     */
+    private function registerBarAsset(): void
+    {
+        $config = $this->app->make(Configuration::class);
+
+        if ($config->string('banner.style', 'bare') !== 'pill' || ! $config->boolean('script', true)) {
+            return;
+        }
+
+        $this->app->make(Router::class)
+            ->get($config->string('banner.asset_route', '/demo-mode/bar.js'), AssetController::class)
+            ->name('demo.asset');
     }
 
     /**

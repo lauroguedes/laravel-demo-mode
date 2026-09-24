@@ -12,6 +12,10 @@
     Dismissal is keyed to the next reset, so a visitor who hides the banner sees
     it again after the data has been rebuilt rather than never again.
 
+    This is the bare banner's copy of the countdown. The floating bar has its
+    own in resources/dist/demo-bar.js, because it runs inside a shadow root from
+    a served file — if the units or the shape change, change both.
+
     The countdown's unit words come from the translations rather than being
     hardcoded here. The first tick overwrites whatever the server rendered, so
     hardcoding "h" and "m" meant a Portuguese demo showed "30 minutos" for one

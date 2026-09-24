@@ -356,7 +356,47 @@ return [
 
         'enabled' => true,
 
+        /*
+         | 'pill'  a floating bar the package styles itself, identical in Blade,
+         |         Livewire and Inertia because it renders inside a shadow root
+         |         where nothing from your stylesheet reaches it. Needs "script"
+         |         below, since it builds its own interface.
+         |
+         | 'bare'  semantic markup with no styling at all, wearing the class
+         |         names from "classes" underneath. For a demo that wants the
+         |         notice to look like the rest of the application, or one under
+         |         a policy that forbids the script.
+         */
+        'style' => 'pill',
+
         'variant' => 'warning',
+
+        /*
+         | The short word on the pill's badge. Null leaves the badge off.
+         */
+        'label' => 'Demo',
+
+        /*
+         | One link on the right of the pill — the repository, the pricing page,
+         | wherever a visitor who liked the demo should go next.
+         |
+         |   'cta' => ['label' => 'Deploy your own', 'url' => 'https://github.com/…'],
+         */
+        'cta' => null,
+
+        /*
+         | Whether the pill offers a rebuild button. Only ever shown when
+         | "on_demand" below is enabled, and it asks before it does anything.
+         */
+        'reset_button' => true,
+
+        /*
+         | Where the pill's script is served from. It is a route rather than a
+         | published file so it cannot fall a version behind the package, and a
+         | route rather than an inline block so "script-src 'self'" is enough.
+         | Change it only if the path collides with one of yours.
+         */
+        'asset_route' => '/demo-mode/bar.js',
 
         'dismissible' => true,
 
@@ -367,13 +407,16 @@ return [
          */
         'message' => null,
 
-        'position' => 'top',
+        /*
+         | 'top' or 'bottom'. The pill floats clear of the content either way;
+         | the bare banner sits wherever you put the component and uses this only
+         | as a data attribute your stylesheet can read.
+         */
+        'position' => 'bottom',
 
         /*
-         | Class names by variant, so the common case is one line here rather
-         | than a published view. The package ships no styling of its own: it
-         | cannot know whether it is inside Tailwind, daisyUI or Bootstrap, and a
-         | component that guesses is one every application rewrites.
+         | Class names by variant, for the 'bare' style only — the pill is inside
+         | a shadow root, where a class name from out here means nothing.
          |
          |   'classes' => ['warning' => 'alert alert-warning', 'default' => 'alert'],
          */

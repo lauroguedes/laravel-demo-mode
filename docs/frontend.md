@@ -135,11 +135,72 @@ including ones served to a crawler.
 `Demo::credentials()` still works server-side, so a Blade login page can prefill
 the form. Only the shared payload loses it.
 
-## Styling
+## Two styles, and why there are two
 
-The components ship no CSS. A package cannot know whether it is inside Tailwind,
-daisyUI, Bootstrap or someone's own stylesheet, and a component that guesses is
-one every application immediately publishes and rewrites.
+`<x-demo-banner />` renders one of two things, chosen by `banner.style`.
+
+### `pill` — the default
+
+A floating bar the package styles itself: a badge, the countdown, an optional
+rebuild button, an optional link, and a dismiss control.
+
+```php
+'banner' => [
+    'style' => 'pill',
+    'label' => 'Demo',
+    'cta'   => ['label' => 'Deploy your own', 'url' => 'https://github.com/…'],
+],
+```
+
+It renders as a `<demo-mode-bar>` custom element that builds its interface inside
+a **shadow root**, which is the entire reason it can look the same in Blade,
+Livewire and Inertia without any of them passing a class. Nothing your stylesheet
+says about `div` or `button` reaches inside it.
+
+Two things a shadow root does *not* stop, both of which bit this component before
+it shipped, and both of which it now handles — worth knowing if you write your
+own:
+
+- **Inherited properties still cross.** `font-weight`, `letter-spacing`,
+  `text-transform` and the rest come in from the host element. Putting
+  `class="font-black"` on `<x-demo-banner />` rendered the bar at weight 900.
+  Don't pass classes to the pill; they cannot help it and can distort it.
+- **`:host` rules lose to the outer document.** Any rule out there matching the
+  element beats a `:host` rule of any specificity — Tailwind's preflight carries
+  `*, ::before, ::after { margin: 0; padding: 0 }`, and it silently removed the
+  bar's offset from the screen edge. All of its layout therefore lives on an
+  element *inside* the shadow root.
+
+**Inertia applications put it in the root Blade view**, next to `@inertia`, not
+in a page component:
+
+```blade
+<body>
+    <x-inertia::app />
+    <x-demo-banner />
+</body>
+```
+
+Outside the Vue or React tree on purpose: it survives a client-side visit, and no
+page component has to know it exists.
+
+The pill needs `script` to be on — a shadow root cannot be expressed as markup.
+With `script => false` the style falls back to `bare` rather than rendering
+nothing. Its one script is served from `/demo-mode/bar.js` (configurable as
+`banner.asset_route`) rather than inlined, so `script-src 'self'` is enough for a
+strict Content-Security-Policy. The URL carries a hash of the file and the
+response is immutable, so it is fetched once.
+
+### `bare` — no CSS at all
+
+Semantic markup with no styling, wearing the class names you supply. For a demo
+that wants the notice to look like the rest of the application, or one whose
+policy forbids the script.
+
+A package cannot know whether it is inside Tailwind, daisyUI, Bootstrap or
+someone's own stylesheet, and a component that guesses is one every application
+rewrites — which is what this style is for, and what the pill sidesteps rather
+than solves.
 
 What you get is semantic markup and hooks:
 
@@ -157,12 +218,15 @@ The common case is one config line:
 
 ```php
 'banner' => [
+    'style'   => 'bare',
     'classes' => [
         'warning' => 'alert alert-warning',
         'danger'  => 'alert alert-danger',
     ],
 ],
 ```
+
+`classes` is read by this style only. A class name means nothing to the pill.
 
 Anything more, publish the views:
 

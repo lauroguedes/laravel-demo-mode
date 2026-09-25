@@ -108,7 +108,9 @@ $middleware->web(append: ['demo.readonly']);
 ```
 
 The middleware is registered as an alias, not pushed into the web group: where it
-belongs depends on your own session and auth ordering.
+belongs depends on your own session and auth ordering. The alias exists on every
+installation, demo or not, so that line is safe to leave in `bootstrap/app.php`
+permanently — the middleware itself does nothing while `DEMO_MODE=false`.
 
 Off by default. A playground exists to be written to, and a read-only demo
 demonstrates less. It earns its place on a demo whose data is expensive to

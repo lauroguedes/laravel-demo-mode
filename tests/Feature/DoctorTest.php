@@ -306,6 +306,31 @@ it('says nothing about the sandbox on a demo that shares its data', function ():
 });
 
 /**
+ * The mistake demo:install's own checklist can produce: publish the migration,
+ * add the column, mark the models, and never set DEMO_SANDBOX=scoped.
+ *
+ * Every scoped check returns early on a driver that is not scoped, so before this
+ * warning existed that demo passed the doctor while every visitor shared
+ * everything — and the checklist said the doctor would catch it.
+ */
+it('warns when models are marked for isolation nobody switched on', function (): void {
+    demo(['demo.sandbox.driver' => 'shared', 'demo.sandbox.models' => [SandboxedNote::class]]);
+
+    expect(findings())->toContain('sandbox:warning');
+});
+
+/**
+ * A warning and not an error: a project can carry the trait and the list the whole
+ * time and switch isolation on per deployment, which is what the env var is for.
+ * A shared staging copy of a scoped demo should not fail a pipeline.
+ */
+it('does not fail a pipeline over it', function (): void {
+    demo(['demo.sandbox.driver' => 'shared', 'demo.sandbox.models' => [SandboxedNote::class]]);
+
+    expect(findings())->not->toContain('sandbox:error');
+});
+
+/**
  * A scoped demo with no marked models behaves exactly like a shared one, and
  * nothing about it looks wrong.
  */

@@ -30,6 +30,10 @@ interesting part.
 
 Three things, and `demo:doctor` errors on each if it is missing.
 
+If you answered `scoped` when `demo:install` asked, the migration for the first one
+is already published — you still have to run it — and the installer printed the
+whole list, in the order `demo:doctor` can check it.
+
 **1. The sandboxes table.**
 
 ```bash
@@ -39,6 +43,10 @@ php artisan migrate
 
 Published rather than loaded, because only this driver needs the table and a
 package should not add one to a database that never asked.
+
+`demo:install --sandbox=scoped` publishes it for you, and skips it if a
+`*_create_demo_sandboxes_table.php` is already there — a second copy would be a
+second migration creating the same table, and `migrate` would fail.
 
 **2. A column on every marked table.**
 
@@ -74,6 +82,9 @@ session, so a route without one is unscoped.
 ```php
 $middleware->web(append: ['demo.sandbox']);
 ```
+
+Safe to leave there permanently. The alias is registered on every installation,
+demo or not, and the middleware does nothing unless this driver is `scoped`.
 
 The middleware is optional: a sandbox is created the moment a visitor first writes
 something, with or without it. What it adds is pushing the expiry out on every

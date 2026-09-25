@@ -37,7 +37,10 @@ final readonly class SandboxIsCoherent implements RunsOnDemosOnly
     public function run(): array
     {
         if (! $this->config->scoped()) {
-            return $this->resetHasSomethingToClear();
+            return [
+                ...$this->isolationWasMeant(),
+                ...$this->resetHasSomethingToClear(),
+            ];
         }
 
         return [
@@ -45,6 +48,42 @@ final readonly class SandboxIsCoherent implements RunsOnDemosOnly
             ...$this->modelsAreDeclared(),
             ...$this->modelsAreMarked(),
         ];
+    }
+
+    /**
+     * Everything done except the one line that switches it on.
+     *
+     * Every check below is skipped when the driver is not scoped, so the mistake
+     * of publishing the migration, adding the column, marking the models and never
+     * setting DEMO_SANDBOX=scoped produced a clean bill of health on a demo where
+     * every visitor shared everything. demo:install's own checklist promised this
+     * was checked, and for that one step it was not.
+     *
+     * Listing models is what makes it detectable: the config says isolate these,
+     * and the driver says isolate nothing.
+     *
+     * A warning rather than an error, because carrying the trait and the list the
+     * whole time and switching isolation on per deployment is the intended shape —
+     * that is what the env var is for, and a shared staging copy of a scoped demo
+     * should not fail a pipeline.
+     *
+     * @return list<Finding>
+     */
+    private function isolationWasMeant(): array
+    {
+        if ($this->config->array('sandbox.models') === []) {
+            return [];
+        }
+
+        return [Finding::warning(
+            'sandbox',
+            sprintf(
+                'demo.sandbox.models lists models to isolate but demo.sandbox.driver is "%s", so nothing is '
+                    .'isolated and every visitor shares everything. None of the other scoped checks ran.',
+                $this->config->string('sandbox.driver', 'shared'),
+            ),
+            'Set DEMO_SANDBOX=scoped in this environment, or empty demo.sandbox.models.',
+        )];
     }
 
     /**

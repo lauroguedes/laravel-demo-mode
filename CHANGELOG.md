@@ -5,6 +5,49 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.0 - 2026-09-25
+
+### Added
+
+- **`demo:install` asks whether visitors share one set of data or get their own.**
+  The only decision about a demo that cannot be inferred later and is expensive to
+  change afterwards: `scoped` needs a table, a column on every model you mark and a
+  trait on each of them. Answering it publishes the `demo_sandboxes` migration and
+  ends on that checklist instead of the shared one, so the three things
+  `demo:doctor` will error on are in front of you at the moment you are paying
+  attention rather than in a config comment.
+- **`--sandbox=shared|scoped`** answers the question for a script. A run with
+  nobody at the keyboard takes `shared` — a deploy step that blocks on a prompt is
+  a broken deploy step — and an unrecognised value fails before anything is
+  written rather than being guessed at.
+- **`.env.example` gains `DEMO_SANDBOX`**, live when `scoped` was chosen and
+  commented when it was not. The checklist still says to set it in the environment
+  that serves the demo: `.env.example` is a template, and this installer does not
+  touch `.env`.
+
+### Fixed
+
+- **Both middleware aliases are registered on every installation, not only on a
+  demo.** `demo.readonly` and `demo.sandbox` are documented as a permanent line in
+  `bootstrap/app.php`, and a line there is on every deployment of that application
+  — including every one that is not a demo, which is all of them by default and
+  every developer's checkout. Laravel resolves an alias it does not know as a class
+  name, so following the documentation and setting `DEMO_MODE=false` threw
+  `Target class [demo.sandbox] does not exist` on every request. Both middleware
+  already did nothing off a demo; only the name was conditional.
+- **`demo:doctor` warns when models are marked for isolation nobody switched on.**
+  Every scoped check returned early on a driver that was not `scoped`, so
+  publishing the migration, adding the column, marking the models and never
+  setting `DEMO_SANDBOX=scoped` produced a clean report on a demo where every
+  visitor shared everything. A warning rather than an error, because carrying the
+  trait and the list and switching isolation on per deployment is the intended
+  shape.
+- A second `demo:install --sandbox=scoped` no longer publishes a second sandboxes
+  migration. The name carries a timestamp, so forcing could never overwrite the
+  first one — only add a second migration creating the same table, and the next
+  `migrate` would fail on a project whose only mistake was running the installer
+  twice.
+
 ## 1.3.1 - 2026-09-24
 
 Three things found by watching the bar rather than reading it.

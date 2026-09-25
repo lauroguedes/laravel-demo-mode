@@ -128,6 +128,7 @@ class DemoModeServiceProvider extends ServiceProvider
         $this->registerBladeConditionals();
         $this->registerViewComponents();
         $this->registerCommands(self::SETUP_COMMANDS);
+        $this->registerMiddlewareAliases();
 
         if (! $this->app->make(Configuration::class)->enabled()) {
             return;
@@ -228,10 +229,11 @@ class DemoModeServiceProvider extends ServiceProvider
     /**
      * The two write guards that register themselves.
      *
-     * The read-only middleware is not one of them: it gets an alias so an
-     * application can put it where its own stack needs it, because a package
-     * that pushed itself into the web group would be deciding an ordering that
-     * depends on somebody else's session and auth middleware.
+     * The read-only middleware is not one of them: it gets an alias instead, so an
+     * application can put it where its own stack needs it, because a package that
+     * pushed itself into the web group would be deciding an ordering that depends
+     * on somebody else's session and auth middleware. That alias is registered in
+     * registerMiddlewareAliases(), outside the flag.
      */
     private function registerWriteGuards(): void
     {
@@ -240,8 +242,33 @@ class DemoModeServiceProvider extends ServiceProvider
         }
 
         $this->app->make(ConnectionGuard::class)->register($this->app->make(DatabaseManager::class));
+    }
 
-        $this->app->make(Router::class)->aliasMiddleware('demo.readonly', ReadOnlyMiddleware::class);
+    /**
+     * Both aliases, on every installation, demo or not.
+     *
+     * These are documented as a line in bootstrap/app.php:
+     *
+     *     $middleware->web(append: ['demo.readonly']);
+     *
+     * A line in bootstrap/app.php is there on every deployment of that
+     * application, and most of them are not demos — every developer's checkout is
+     * not. Laravel resolves an alias it does not know as a class name, so an alias
+     * registered only while the flag is on threw a BindingResolutionException on
+     * every request of every installation that had followed the documentation.
+     * Both middleware already do nothing off a demo; it was only the name that was
+     * conditional.
+     *
+     * Through callAfterResolving so this stays the "zero cost when disabled" the
+     * rest of this class is about: an application that never resolves the Router —
+     * a console command, a queue worker — never pays for two array writes.
+     */
+    private function registerMiddlewareAliases(): void
+    {
+        $this->callAfterResolving(Router::class, static function (Router $router): void {
+            $router->aliasMiddleware('demo.readonly', ReadOnlyMiddleware::class);
+            $router->aliasMiddleware('demo.sandbox', AttachSandbox::class);
+        });
     }
 
     /**
@@ -334,18 +361,11 @@ class DemoModeServiceProvider extends ServiceProvider
     }
 
     /**
-     * The sandbox middleware alias and the pruning schedule.
-     *
-     * The middleware is an alias rather than something pushed into the web group,
-     * because it has to run after the session middleware and that ordering is the
-     * application's to state. A sandbox is created the moment a visitor first
-     * writes something with or without the middleware, so what it adds is the
-     * expiry renewal — the difference between a TTL and a deadline.
+     * The pruning schedule. The middleware alias is registered elsewhere, and
+     * unconditionally — see registerSandboxAlias().
      */
     private function registerSandbox(): void
     {
-        $this->app->make(Router::class)->aliasMiddleware('demo.sandbox', AttachSandbox::class);
-
         if (! $this->app->make(Configuration::class)->scoped()) {
             return;
         }

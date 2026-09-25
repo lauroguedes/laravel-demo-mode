@@ -21,6 +21,34 @@ Everything it does is additive. It does not edit `.env`, and it does not set
 `DEMO_MODE=true`. Turning an installation into a public playground is something
 you do to a deployment on purpose.
 
+### The one question it asks
+
+```
+ ┌ Should every visitor see the same data? ──────────────────────┐
+ │ › ● Shared — one dataset, everybody pokes at the same thing   │
+ │   ○ Scoped — each visitor gets the baseline plus their own    │
+ └───────────────────────────────────────────────────────────────┘
+```
+
+Everything else about a demo has a sensible default or can be changed with one
+env var. This one cannot: `scoped` needs a table, a column on every model you
+mark and a trait on each of them, so it is asked at the moment you are actually
+paying attention rather than left in a config comment.
+
+Answer **shared** if you are not sure — it is the default and it costs nothing.
+See [Per-visitor isolation](sandbox.md) for what the other one buys.
+
+Choosing `scoped` publishes the `demo_sandboxes` migration and ends on a longer
+checklist. `demo:doctor` errors on every step of it you have not done.
+
+```bash
+# For a script, or any run with nobody at the keyboard.
+php artisan demo:install --sandbox=scoped
+```
+
+A run with `--no-interaction` and no `--sandbox` takes `shared`: a deploy script
+that blocks on a prompt is a broken deploy script.
+
 ## Nothing is a demo yet
 
 With `DEMO_MODE=false` — the default — the package registers nothing. No

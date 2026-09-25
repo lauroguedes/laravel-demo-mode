@@ -5,6 +5,22 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.4.1 - 2026-09-25
+
+### Fixed
+
+- **The spinner orbited instead of turning.** The fix in 1.3.1 replaced the glyph
+  and left the real fault in place. `display: inline-flex` and the centring that
+  goes with it were on `button`, and the spinner is a `<span class="icon">` — so
+  the 15px glyph sat in the top-left corner of the 28px box while the rotation
+  pivot stayed at the box's centre, 6.5px away on each axis. It swung around a
+  circle of radius 9px, which is what "spinning strangely" was all along.
+
+  The centring moved onto `.icon` itself, and the animation moved onto the `svg`
+  rather than the wrapper: an SVG's own centre is its centre whatever the box
+  around it does, so the pivot can no longer be wrong. Measured in a browser —
+  the glyph's centre now drifts 0px across a full rotation.
+
 ## 1.4.0 - 2026-09-25
 
 ### Added

@@ -152,8 +152,16 @@
         }
         button[disabled] { opacity: 0.5; cursor: default; }
 
+        /* The centring is here and not only on button, because the spinner is a
+           <span class="icon"> and a span is not a button. Without it the 15px
+           glyph sat in the top-left of the 28px box while transform-origin stayed
+           at the box's centre, so the spinner orbited a point 9px away instead of
+           turning on the spot. */
         .icon {
             flex: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             width: 28px;
             height: 28px;
             padding: 0;
@@ -190,9 +198,14 @@
         }
         .ghost:hover { color: #fff; }
 
-        .spin { animation: spin 900ms linear infinite; }
+        /* The glyph turns, not the box around it. Rotating the wrapper makes the
+           pivot depend on that wrapper being exactly the size of what it holds
+           and on the glyph being centred in it -- two things a later layout change
+           can quietly break, and both of which it once did. An SVG's own centre is
+           its centre whatever the box does. */
+        .spin svg { animation: spin 900ms linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .spin svg { animation: none; } }
 
         /* Narrow screens: the countdown and the call to action are the first
            things to go, because the badge is what the bar is for. */

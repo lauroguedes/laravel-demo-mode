@@ -119,6 +119,22 @@ and not a security boundary; see [docs/sandbox.md](docs/sandbox.md).
 | `demo:snapshot` | Capture the baseline the snapshot strategy restores |
 | `demo:sandbox:prune` | Remove the sandboxes nobody came back to |
 
+## Working with an AI agent
+
+If the project uses [Laravel Boost](https://laravel.com/docs/13.x/boost), this
+package ships its own guidelines and an agent skill. `php artisan boost:install`
+picks them up with no configuration.
+
+The guidelines are the short, always-loaded part: that this package drops tables,
+that `Demo::enabled()` is the single source of truth, that the view components
+already decide for themselves whether to render, and that a seeder must read the
+published password from `Demo::passwordFor()` rather than hardcoding one — which
+is the mistake that fails silently after the first rotation.
+
+The `demo-mode-development` skill carries the rest, loaded only when it is
+relevant: reset strategies, per-visitor isolation, cleaners, restrictions, write
+guards and the on-demand reset.
+
 ## What it is not
 
 - **Password-protecting a work in progress.** That is `php artisan down --secret`.

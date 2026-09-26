@@ -40,6 +40,15 @@ tables; a wrong configuration erases your database.
 | [recipes/saas-playground.md](recipes/saas-playground.md) | A demo of a product with real customers |
 | [recipes/deployment.md](recipes/deployment.md) | Pipelines, workers, cron and containers |
 
+## AI agents
+
+| | |
+|---|---|
+| `resources/boost/guidelines/core.blade.php` | Loaded upfront by [Laravel Boost](https://laravel.com/docs/13.x/boost) — the handful of things an agent gets wrong otherwise |
+| `resources/boost/skills/demo-mode-development/` | Loaded on demand, for configuring and diagnosing a demo |
+
+Nothing to install: `boost:install` discovers both from the package.
+
 ## Upgrading
 
 [../UPGRADE.md](../UPGRADE.md) — including migrating off a hand-rolled demo mode.

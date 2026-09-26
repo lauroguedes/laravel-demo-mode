@@ -17,6 +17,12 @@
         "docs": "https://github.com/lauroguedes/laravel-demo-mode/blob/main/docs/README.md",
         "security": "https://github.com/lauroguedes/laravel-demo-mode/security/policy"
     },
+    "funding": [
+        {
+            "type": "custom",
+            "url": "https://buymeacoffee.com/lauroguedes"
+        }
+    ],
     "authors": [
         {
             "name": "Lauro Guedes",

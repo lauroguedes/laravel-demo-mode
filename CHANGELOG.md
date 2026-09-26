@@ -5,6 +5,33 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.0 - 2026-09-26
+
+### Added
+
+- **AI guidelines and an agent skill for [Laravel Boost](https://laravel.com/docs/13.x/boost).**
+  A project that has Boost installed picks both up from this package with no
+  configuration — `boost:install` discovers them.
+
+  The guideline is deliberately short, because Boost concatenates every
+  guideline into one block that is loaded upfront on every request an agent
+  makes. It carries only what an agent gets wrong otherwise: that this package
+  drops tables and `DEMO_MODE=true` is not a thing to set on somebody's behalf,
+  that `Demo::enabled()` is the single source of truth, that the view components
+  already decide for themselves whether to render so wrapping them in `@demo` is
+  wrong, that a seeder must read the published password from
+  `Demo::passwordFor()` — the mistake that fails silently after the first
+  rotation — and that a countdown is arithmetic on a cron expression rather than
+  evidence anything runs it.
+
+  The `demo-mode-development` skill carries the rest, loaded only when it is
+  relevant: reset strategies, per-visitor isolation and the three things it needs
+  to not leak rows, cleaners, restrictions, write guards, the on-demand reset and
+  the frontend payload.
+
+- **A `funding` entry in `composer.json`**, so the Packagist page carries the
+  link.
+
 ## 1.5.1 - 2026-09-26
 
 A review of the whole package and its documentation ahead of publishing. No

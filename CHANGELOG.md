@@ -5,6 +5,27 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.0 - 2026-09-26
+
+### Added
+
+- **`demo:doctor` warns when a demo publishes credentials and none are
+  published.** A demo nobody can sign in to still looks like a working demo:
+  the flag is on, the banner counts down, the guards pass, and the login page
+  renders two empty boxes because publishing a password is something a reset
+  does and no reset has happened. Nothing looked at that — the only trace was
+  two lines in `demo:status` you had to already suspect something to go and read.
+
+  Two shapes, told apart because the remedy differs. No reset has ever run, which
+  is a first deployment waiting for one. Or a reset ran and there is still nothing
+  readable here, which on one machine means something removed it and across
+  machines means the `file` store wrote to a disk the web process does not read.
+
+  Warnings rather than errors: this command is documented as belonging in a deploy
+  pipeline *ahead of* the first reset, so erroring would fail the usage the README
+  recommends, and an empty login form is neither destroying data nor publishing a
+  secret.
+
 ## 1.6.1 - 2026-09-26
 
 ### Fixed

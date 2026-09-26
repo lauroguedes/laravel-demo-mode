@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 use LauroGuedes\DemoMode\Cleaners\FlushCache;
 use LauroGuedes\DemoMode\Doctor\Doctor;
 use LauroGuedes\DemoMode\Doctor\Finding;
 use LauroGuedes\DemoMode\Restrictions\DisableMail;
+use LauroGuedes\DemoMode\Support\CacheKeys;
 use Workbench\App\Models\DemoUser;
 use Workbench\App\Models\SandboxedNote;
 
@@ -297,6 +300,69 @@ it('says nothing about a store whose locks are real and shared', function (): vo
     demo(['cache.default' => 'file']);
 
     expect(findings())->not->toContain('reset-lock:error', 'reset-lock:warning');
+});
+
+/*
+ * The demo that looks right and cannot be signed in to. Everything else passes —
+ * flag on, guards clean, banner counting down — while the login page offers two
+ * empty boxes, because publishing a password is something a reset does and no
+ * reset has happened.
+ */
+
+it('warns when a demo publishes credentials and none are published', function (): void {
+    Storage::fake('local');
+
+    demo();
+
+    expect(findings())->toContain('credentials-published:warning');
+});
+
+/**
+ * A warning and not an error: this command is documented as belonging in a deploy
+ * pipeline ahead of the first reset, so a fresh deployment legitimately has
+ * nothing published and an error would fail the usage the README recommends.
+ */
+it('does not fail a pipeline that has simply not reset yet', function (): void {
+    Storage::fake('local');
+
+    demo();
+
+    expect(findings())->not->toContain('credentials-published:error');
+});
+
+it('says nothing once a reset has published something', function (): void {
+    published();
+
+    expect(findings())->not->toContain('credentials-published:warning');
+});
+
+/**
+ * The second shape, and the one worth telling apart: a reset happened and still
+ * nothing is readable here. On one machine that means the cleaner ate it; across
+ * machines it means the file store wrote to a disk the web process does not read.
+ * The wording differs because the remedy does.
+ */
+it('says a reset ran when one did and there is still nothing to show', function (): void {
+    Storage::fake('local');
+
+    demo();
+
+    cache()->store()->forever(CacheKeys::LAST_RESET, CarbonImmutable::now()->subHour()->toIso8601String());
+
+    $doctor = app(Doctor::class)->run();
+
+    $message = collect($doctor)
+        ->first(fn (Finding $f): bool => $f->toArray()['check'] === 'credentials-published')
+        ?->message;
+
+    expect($message)->toContain('A reset ran at')
+        ->and($message)->not->toContain('no reset has ever run');
+});
+
+it('says nothing at all when this demo publishes no credentials', function (): void {
+    demo(['demo.credentials.enabled' => false]);
+
+    expect(findings())->not->toContain('credentials-published:warning', 'credentials-published:error');
 });
 
 it('says nothing about the sandbox on a demo that shares its data', function (): void {

@@ -36,6 +36,22 @@ Demo::rotate();          // publish new passwords — see the warning below
 > `CredentialsRotated` and apply `Demo::passwordFor($email)` to the account
 > yourself.
 
+## Nothing is published until a reset runs
+
+A reset is what generates the passwords and hands them to your seeder. Before the
+first one, the store is empty and the login page has nothing to prefill — two
+boxes and no way in, on a demo where everything else looks right.
+
+`demo:doctor` warns about it, and `demo:status` shows the same thing as
+`Accounts published: 0` beside `Last reset: not yet`.
+
+```bash
+php artisan demo:reset --force
+```
+
+`--force` because a reset with nobody at the keyboard refuses rather than
+assuming consent, and a deploy step has nobody at the keyboard.
+
 ## Reading it from your seeder
 
 ```php

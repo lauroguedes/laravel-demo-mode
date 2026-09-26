@@ -10,6 +10,7 @@ use LauroGuedes\DemoMode\Contracts\DoctorCheck;
 use LauroGuedes\DemoMode\Contracts\RunsOnDemosOnly;
 use LauroGuedes\DemoMode\Doctor\Checks\ConnectionGuardIsSurvivable;
 use LauroGuedes\DemoMode\Doctor\Checks\CredentialsAreNotPublic;
+use LauroGuedes\DemoMode\Doctor\Checks\CredentialsArePublished;
 use LauroGuedes\DemoMode\Doctor\Checks\CredentialsSurviveTheReset;
 use LauroGuedes\DemoMode\Doctor\Checks\DatabaseLooksDisposable;
 use LauroGuedes\DemoMode\Doctor\Checks\GuardsWouldPass;
@@ -49,6 +50,7 @@ final class Doctor
         StrategyIsUsable::class,
         CredentialsAreNotPublic::class,
         CredentialsSurviveTheReset::class,
+        CredentialsArePublished::class,
         MailIsContained::class,
         PublishedAccountIsProtected::class,
         RotationCanTakeEffect::class,

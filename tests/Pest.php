@@ -9,6 +9,7 @@ use LauroGuedes\DemoMode\Credentials\Credential;
 use LauroGuedes\DemoMode\Credentials\Manager;
 use LauroGuedes\DemoMode\DemoModeServiceProvider;
 use LauroGuedes\DemoMode\Reset\ResetContext;
+use LauroGuedes\DemoMode\Support\DestructiveCommands;
 use LauroGuedes\DemoMode\Tests\TestCase;
 
 pest()->extend(TestCase::class)->in('Unit', 'Feature', 'Integration', 'Arch');
@@ -92,12 +93,26 @@ function databaseNameKey(): string
  * purpose and a persistent database would not bring it back — the migration is
  * already recorded as run. On the in-memory sqlite the suite uses by default the
  * difference is invisible, which is exactly why it only ever showed up on MySQL.
+ *
+ * The prohibition has to be lifted first, and the result asserted, or this fails
+ * in silence. DestructiveCommands::permitting() ends on prohibit(true) whatever
+ * it started from — correct on a demo, where the whole point is that migrate:fresh
+ * stays blocked — and it sets a static on Illuminate's command classes, which
+ * outlives the application Testbench rebuilds between tests. So one test file that
+ * runs a reset leaves migrate:fresh prohibited for every file after it in the
+ * process.
+ *
+ * Without those two lines this helper did nothing and said nothing, and the first
+ * sign was a "no such table" from whichever test inserted a row next — in a file
+ * that had done nothing wrong.
  */
 function freshSchema(): void
 {
+    DestructiveCommands::prohibit(false);
+
     app('migrator')->path(__DIR__.'/../workbench/database/migrations');
 
-    test()->artisan('migrate:fresh', ['--force' => true]);
+    test()->artisan('migrate:fresh', ['--force' => true])->assertSuccessful();
 }
 
 /**

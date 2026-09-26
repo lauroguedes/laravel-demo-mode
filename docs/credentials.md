@@ -14,12 +14,27 @@ reads.
 Demo::credentials();     // ['email' => …, 'password' => …, 'label' => …]
 Demo::allCredentials();  // every published account, each with a 'primary' flag
 Demo::passwordFor($email);  // just the password, or null — what a seeder wants
-Demo::rotate();          // new passwords now, without rebuilding the data
+Demo::rotate();          // publish new passwords — see the warning below
 ```
 
 ```blade
 <x-demo-credentials />
 ```
+
+> **`rotate()` publishes; it does not hash.** It writes new passwords to the store
+> the login page reads and stops there, because this package cannot know which
+> model or column holds your passwords — your seeder does that, reading
+> `Demo::passwordFor()`, and your seeder runs during a reset.
+>
+> Rotating on its own therefore leaves every account signing in with the password
+> it was seeded with, while the login page advertises a different one. It does not
+> retire a leaked password either: the old hash is still in the database and still
+> works. It only stops it being displayed.
+>
+> A reset does both halves, which is why it is the normal way to get a working
+> published password. If you need one without rebuilding the data, listen for
+> `CredentialsRotated` and apply `Demo::passwordFor($email)` to the account
+> yourself.
 
 ## Reading it from your seeder
 

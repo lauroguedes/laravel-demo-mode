@@ -5,6 +5,41 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.6.1 - 2026-09-26
+
+### Fixed
+
+- **`demo:credentials --rotate` said it retired a leaked password. It does not.**
+  Rotating generates a password and writes it to the store the login page reads,
+  and stops there — nothing in this package hashes a password into an account,
+  because it cannot know which model or column that is. Your seeder does it,
+  reading `Demo::passwordFor()`, and your seeder runs during a reset.
+
+  So rotating on its own left every account signing in with the password it was
+  seeded with while the login page advertised a different one, and the leaked
+  password it was reached for kept working — it just stopped being displayed.
+  Three places said otherwise: the command's docblock, the line it prints after
+  rotating, and `Demo::rotate()`'s one-line description in the docs. All three
+  now say what happens, the command warns every time it rotates, and
+  `RotateDoesNotTouchTheAccountTest` asserts both halves.
+
+- **`demo:credentials` offered `--rotate` as the fix for "nothing is published
+  yet".** Following that advice produced a login page showing a password that
+  opened nothing. It names `demo:reset` alone now.
+
+### Internal
+
+- `freshSchema()` in the test suite lifted no prohibition and asserted nothing, so
+  it did nothing at all in any file that ran after one that performed a reset —
+  `DestructiveCommands::permitting()` ends on `prohibit(true)` whatever it started
+  from, and that is a static on Illuminate's command classes, which outlives the
+  application Testbench rebuilds between tests. The first sign was a "no such
+  table" in a file that had done nothing wrong.
+
+- `ResetConfirmationTest` covers what a skipped confirmation means: a run with
+  nobody to answer and no `--force` refuses, exits non-zero and changes nothing.
+  The behaviour was already right and already deliberate; nothing asserted it.
+
 ## 1.6.0 - 2026-09-26
 
 ### Added

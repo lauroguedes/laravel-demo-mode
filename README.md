@@ -2,7 +2,8 @@
 
 [![Tests](https://github.com/lauroguedes/laravel-demo-mode/actions/workflows/tests.yml/badge.svg)](https://github.com/lauroguedes/laravel-demo-mode/actions/workflows/tests.yml)
 [![Latest Version](https://img.shields.io/packagist/v/lauroguedes/laravel-demo-mode.svg)](https://packagist.org/packages/lauroguedes/laravel-demo-mode)
-[![License](https://img.shields.io/packagist/l/lauroguedes/laravel-demo-mode.svg)](LICENSE.md)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/lauroguedes/laravel-demo-mode?style=flat)](https://packagist.org/packages/lauroguedes/laravel-demo-mode)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE.md)
 
 Turn a Laravel installation into a public playground: seeded data, a scheduled
 reset, rotating credentials published on the login page, and a belt of
@@ -16,6 +17,8 @@ five pieces, extracted from two demos that have been running in public.
 
 > **This package drops tables.** Read [docs/security.md](docs/security.md) before
 > you install it anywhere. A wrong configuration erases your database.
+
+<img width="1672" height="941" alt="Laravel Demo Mode pill bar on bottom centralized" src="https://github.com/user-attachments/assets/8b178090-6e57-43a2-beb9-988273b9d09c" />
 
 ## Installation
 
@@ -146,3 +149,20 @@ which had each solved this badly in their own way first.
 ## License
 
 The MIT License. See [LICENSE.md](LICENSE.md).
+
+---
+
+<p align="center">
+  <b>If this is useful to you, please star the repository.</b><br>
+  It is the thing that helps other people find it.
+</p>
+
+<p align="center">
+  <a href="https://github.com/lauroguedes/laravel-demo-mode/stargazers">⭐ Star this project</a>
+  &nbsp;·&nbsp;
+  <a href="https://buymeacoffee.com/lauroguedes">☕ Buy me a coffee</a>
+</p>
+
+<p align="center">
+  <sub>Crafted by an Artisan ♥ <a href="https://lauroguedes.dev">Lauro Guedes</a></sub>
+</p>

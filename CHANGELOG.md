@@ -5,6 +5,35 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.0 - 2026-09-26
+
+### Added
+
+- **`demo:install` asks whether to start a `DemoSeeder`.** It always wrote one,
+  and in a project whose existing seeder already builds something demonstrable
+  that file is dead weight — it sat unused in the first project to adopt this,
+  because the config there pointed at `DatabaseSeeder` instead.
+
+  Saying no writes nothing and ends on a different closing line: which config key
+  to repoint, and why the published account's password has to be read from
+  `Demo::passwordFor()` rather than hardcoded. That second one is what the stub's
+  own comments would have taught, and getting it wrong is silent — the login page
+  shows one password and the database holds another from the first rotation
+  onwards.
+
+  The question is skipped when a `DemoSeeder.php` is already there. The only
+  answer that would change anything is "replace it", `--force` is how you say
+  that, and a file that may hold real seed data is not something to be nudged
+  into replacing by a prompt. `--without-seeder` answers the question for a
+  script, and a run with nobody at the keyboard still writes the stub — which is
+  what this command has always done, and what the config it publishes expects.
+
+  What the closing line says is decided by what is on disk when the run ends,
+  not by whether this command wrote it. Two booleans could spell a state that
+  cannot happen, and one spelling of it did: `--force` plus declining the stub
+  reported "not written" and closed by telling you to repoint `demo.reset` away
+  from a seeder that was sitting right there and working.
+
 ## 1.4.1 - 2026-09-25
 
 ### Fixed

@@ -7,6 +7,7 @@ namespace LauroGuedes\DemoMode\Console;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
+use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\select;
 
 /**
@@ -18,17 +19,27 @@ use function Laravel\Prompts\select;
  * act a person performs deliberately, on the deployment they meant, and an
  * installer that did it for you would be the first thing this package gets wrong.
  *
- * It asks exactly one question, and only because that answer changes what the
- * rest of the installation is: whether visitors share one set of data or get
- * their own. 'scoped' also needs a table, a column on every marked model and a
- * trait on each of them, so answering it publishes the migration and ends on a
- * different checklist. Everything else this package can infer or default, and a
- * question whose answer is already in the config is a question that wastes the
- * one moment somebody is paying attention.
+ * It asks two questions, and only these two, because each one changes what the
+ * rest of the installation is and neither can be inferred from the project:
  *
- * Non-interactive runs get 'shared' — the default, and the only driver that needs
- * nothing — because a deploy script that blocks on a prompt is a broken deploy
- * script. --sandbox= answers it without being asked.
+ * Whether visitors share one set of data or get their own. 'scoped' also needs a
+ * table, a column on every marked model and a trait on each of them, so answering
+ * it publishes the migration and ends on a different checklist.
+ *
+ * Whether to start a DemoSeeder. A project that already has a seeder shaped like
+ * a demonstration — and plenty do, because the demo is usually a dressed-up
+ * version of the local fixtures — does not want a second empty one, and the
+ * config key it has to repoint instead is the one thing that is easy to miss.
+ * Both answers end on a different line of the checklist for exactly that reason.
+ *
+ * Everything else this package can infer or default, and a question whose answer
+ * is already in the config is a question that wastes the one moment somebody is
+ * paying attention.
+ *
+ * Non-interactive runs get 'shared' and do write the seeder, which is what this
+ * command has always done — a deploy script that blocks on a prompt is a broken
+ * deploy script. --sandbox= and --without-seeder answer both without being
+ * asked.
  *
  * What it prints either way is the checklist, ending on the two settings that
  * matter most and that nothing else can infer: which environments may reset, and
@@ -40,18 +51,26 @@ final class InstallCommand extends Command
 
     protected $signature = 'demo:install
         {--force : Overwrite files that already exist}
-        {--sandbox= : shared or scoped, rather than being asked}';
+        {--sandbox= : shared or scoped, rather than being asked}
+        {--without-seeder : Skip the DemoSeeder stub, rather than being asked}';
 
-    protected $description = 'Publish the demo-mode config and seeder stub';
+    protected $description = 'Publish the demo-mode config and, if you want one, a seeder stub';
 
     public function handle(Filesystem $files): int
     {
-        /* Asked before anything is written, so a mistyped --sandbox costs nothing. */
+        /*
+         * Both questions come before anything is written: a mistyped --sandbox
+         * then costs nothing, and two prompts in a row read better than two
+         * prompts with a vendor:publish between them.
+         */
         $driver = $this->sandboxDriver();
 
         if ($driver === null) {
             return self::FAILURE;
         }
+
+        $seederPath = $this->laravel->databasePath('seeders/DemoSeeder.php');
+        $seeder = $this->seederPlan($files, $seederPath);
 
         $this->newLine();
         $this->components->info('Installing demo mode.');
@@ -61,7 +80,7 @@ final class InstallCommand extends Command
             '--force' => $this->option('force') === true ? true : null,
         ], static fn (mixed $v): bool => $v !== null));
 
-        $this->publishSeeder($files);
+        $this->publishSeeder($files, $seederPath, $seeder);
 
         if ($driver === 'scoped') {
             $this->publishSandboxMigration($files);
@@ -71,7 +90,7 @@ final class InstallCommand extends Command
 
         $this->newLine();
         $this->components->info('Installed. Nothing is a demo yet — here is what makes one:');
-        $this->components->bulletList($this->checklist($driver));
+        $this->components->bulletList($this->checklist($driver, hasSeeder: $seeder !== 'declined'));
         $this->newLine();
 
         return self::SUCCESS;
@@ -117,18 +136,84 @@ final class InstallCommand extends Command
         );
     }
 
-    private function publishSeeder(Filesystem $files): void
+    /**
+     * What is going to happen to database/seeders/DemoSeeder.php.
+     *
+     * Three outcomes and not two booleans, because the pair of them could spell
+     * a fourth state that cannot happen, and one spelling of it shipped: "there
+     * is one, and we are not writing" and "there is none, and we are not
+     * writing" were the same false, so a --force run that declined the stub
+     * printed "not written" and closed by telling you to repoint demo.reset away
+     * from a seeder that was sitting right there and working. This value says
+     * which of the three it is, and the report and the checklist both read it.
+     *
+     * 'declined' therefore means "no DemoSeeder when this finishes", never
+     * merely "did not write one".
+     *
+     * @return 'written'|'kept'|'declined'
+     */
+    private function seederPlan(Filesystem $files, string $path): string
     {
-        $destination = $this->laravel->databasePath('seeders/DemoSeeder.php');
+        if ($this->option('without-seeder') === true) {
+            return $files->exists($path) ? 'kept' : 'declined';
+        }
 
-        if ($files->exists($destination) && $this->option('force') !== true) {
+        /*
+         * Not asked when one is already there. The only answer that would change
+         * anything is "replace it", and --force is how you say that — a file that
+         * may hold real seed data is not something to be nudged into replacing by
+         * a prompt. It also keeps the question honest: it only ever offers to
+         * start something, and never to overwrite it.
+         */
+        if ($files->exists($path)) {
+            return $this->option('force') === true ? 'written' : 'kept';
+        }
+
+        return $this->wantsSeeder() ? 'written' : 'declined';
+    }
+
+    /**
+     * Whether to start one, asked only where there is nothing to lose.
+     *
+     * Defaults to yes wherever it is not asked, because that is what this command
+     * did before it asked at all, and because the config it publishes names
+     * Database\Seeders\DemoSeeder — an install that quietly stopped writing the
+     * file would leave the two disagreeing.
+     */
+    private function wantsSeeder(): bool
+    {
+        if (! $this->input->isInteractive()) {
+            return true;
+        }
+
+        return confirm(
+            label: 'Start a DemoSeeder for the demonstration data?',
+            default: true,
+            yes: 'Yes, write me a stub',
+            no: 'No, I already have a seeder for this',
+            hint: 'Say no if your existing seeder builds the demo. You then point demo.reset at it instead.',
+        );
+    }
+
+    /**
+     * @param  'written'|'kept'|'declined'  $plan
+     */
+    private function publishSeeder(Filesystem $files, string $path, string $plan): void
+    {
+        if ($plan === 'kept') {
             $this->components->twoColumnDetail('Seeder', '<fg=yellow>already exists, left alone</>');
 
             return;
         }
 
-        $files->ensureDirectoryExists(dirname($destination));
-        $files->put($destination, (string) $files->get(__DIR__.'/../../stubs/DemoSeeder.php.stub'));
+        if ($plan === 'declined') {
+            $this->components->twoColumnDetail('Seeder', '<fg=yellow>not written — repoint demo.reset at yours</>');
+
+            return;
+        }
+
+        $files->ensureDirectoryExists(dirname($path));
+        $files->put($path, (string) $files->get(__DIR__.'/../../stubs/DemoSeeder.php.stub'));
 
         $this->components->twoColumnDetail('Seeder', '<fg=green>database/seeders/DemoSeeder.php</>');
     }
@@ -247,12 +332,12 @@ final class InstallCommand extends Command
     /**
      * @return list<string>
      */
-    private function checklist(string $driver): array
+    private function checklist(string $driver, bool $hasSeeder): array
     {
         $doctor = 'Run demo:doctor. It exits non-zero on anything that would destroy data or publish a secret.';
 
         $everyDemo = [
-            'Write the demonstration data into database/seeders/DemoSeeder.php.',
+            ...$this->seederSteps(hasSeeder: $hasSeeder),
             'Set DEMO_MODE=true in the environment that serves the demo, and nowhere else.',
             'Set demo.environments to the environments that may rebuild the data.',
             'Set demo.allowed_hosts to the demo\'s hostname — it is the guard that survives a copied .env.',
@@ -279,5 +364,36 @@ final class InstallCommand extends Command
         }
 
         return [...$everyDemo, $doctor];
+    }
+
+    /**
+     * What is left to do about the data, which is a different thing depending on
+     * the answer — and the reason the question is worth asking at all.
+     *
+     * The published config names Database\Seeders\DemoSeeder. Somebody who said
+     * no now has a config pointing at a class that is not there, and the way that
+     * fails is bad enough to spell out: migrate:fresh runs first, so by the time
+     * db:seed cannot find the seeder the database is already empty and there is
+     * nothing left to refill it. demo:doctor catches it beforehand, which is why
+     * the last line of the checklist is the one that matters most here.
+     *
+     * The second line is what the stub's own comments would have told them. A
+     * seeder that hardcodes the demo account's password works exactly until the
+     * first rotation, and then the login page shows one password while the
+     * database holds another — with no error anywhere, just a demo nobody can get
+     * into.
+     *
+     * @return list<string>
+     */
+    private function seederSteps(bool $hasSeeder): array
+    {
+        if ($hasSeeder) {
+            return ['Write the demonstration data into database/seeders/DemoSeeder.php — demo.reset already points at it.'];
+        }
+
+        return [
+            'Point demo.reset.strategies.migrate-fresh-seed.seeder at your own seeder. It still names Database\Seeders\DemoSeeder, which you chose not to create.',
+            'Read the published account\'s password in that seeder from Demo::passwordFor(), rather than hardcoding one — otherwise the login page and the database disagree from the first rotation onwards.',
+        ];
     }
 }

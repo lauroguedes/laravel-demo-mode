@@ -21,33 +21,48 @@ Everything it does is additive. It does not edit `.env`, and it does not set
 `DEMO_MODE=true`. Turning an installation into a public playground is something
 you do to a deployment on purpose.
 
-### The one question it asks
+### The two questions it asks
 
 ```
  ┌ Should every visitor see the same data? ──────────────────────┐
  │ › ● Shared — one dataset, everybody pokes at the same thing   │
  │   ○ Scoped — each visitor gets the baseline plus their own    │
  └───────────────────────────────────────────────────────────────┘
+
+ ┌ Start a DemoSeeder for the demonstration data? ───────────────┐
+ │ Yes, write me a stub / No, I already have a seeder for this   │
+ └───────────────────────────────────────────────────────────────┘
 ```
 
 Everything else about a demo has a sensible default or can be changed with one
-env var. This one cannot: `scoped` needs a table, a column on every model you
-mark and a trait on each of them, so it is asked at the moment you are actually
-paying attention rather than left in a config comment.
+env var. These two cannot.
 
-Answer **shared** if you are not sure — it is the default and it costs nothing.
-See [Per-visitor isolation](sandbox.md) for what the other one buys.
+**Isolation.** `scoped` needs a table, a column on every model you mark and a
+trait on each of them, so it is asked while you are paying attention rather than
+left in a config comment. Answer **shared** if you are not sure — it is the
+default and it costs nothing. See [Per-visitor isolation](sandbox.md) for what
+the other one buys. Choosing `scoped` publishes the `demo_sandboxes` migration
+and ends on a longer checklist.
 
-Choosing `scoped` publishes the `demo_sandboxes` migration and ends on a longer
-checklist. `demo:doctor` errors on every step of it you have not done.
+**The seeder.** Plenty of projects already have a seeder shaped like a
+demonstration — the demo is often a dressed-up version of the local fixtures — and
+do not want a second empty one. Say no and the installer writes nothing, but the
+config it publishes still names `Database\Seeders\DemoSeeder`, so the closing
+checklist tells you which key to repoint and why the published password has to be
+read from `Demo::passwordFor()` rather than hardcoded. The question is skipped
+entirely when a `DemoSeeder.php` is already there.
+
+`demo:doctor` errors on every step of either checklist you have not done,
+including a seeder class named in config that does not exist.
 
 ```bash
 # For a script, or any run with nobody at the keyboard.
-php artisan demo:install --sandbox=scoped
+php artisan demo:install --sandbox=scoped --without-seeder
 ```
 
-A run with `--no-interaction` and no `--sandbox` takes `shared`: a deploy script
-that blocks on a prompt is a broken deploy script.
+A run with `--no-interaction` takes `shared` and does write the seeder — what this
+command did before it asked anything. A deploy script that blocks on a prompt is a
+broken deploy script.
 
 ## Nothing is a demo yet
 

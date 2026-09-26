@@ -29,10 +29,11 @@ and appends the `DEMO_` keys to `.env.example`. It does not touch `.env` and it
 does not turn the demo on — that is an act you perform on the deployment you
 meant.
 
-It asks one question: whether every visitor sees the same data, or each gets
-[their own corner of it](docs/sandbox.md). Answer `shared` if you are not sure.
-`--sandbox=shared|scoped` answers it for a script, and a non-interactive run takes
-`shared`.
+It asks two: whether every visitor sees the same data or each gets
+[their own corner of it](docs/sandbox.md), and whether to start a `DemoSeeder` or
+point the reset at a seeder you already have. Answer `shared` if you are not sure.
+`--sandbox=shared|scoped` and `--without-seeder` answer both for a script, and a
+non-interactive run takes `shared` and writes the seeder.
 
 ## Making an installation a demo
 

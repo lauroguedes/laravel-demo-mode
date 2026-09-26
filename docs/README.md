@@ -48,7 +48,7 @@ tables; a wrong configuration erases your database.
 
 | Command | |
 |---|---|
-| `demo:install` | Publish the config and the seeder stub |
+| `demo:install` | Publish the config, and a seeder stub if you want one |
 | `demo:doctor` | Audit the configuration. Non-zero exit on anything dangerous |
 | `demo:status` | What this installation currently is |
 | `demo:reset` | Rebuild the data. `--dry-run` prints the plan |

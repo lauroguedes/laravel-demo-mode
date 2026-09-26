@@ -20,7 +20,29 @@ prohibited again.
 | `FlushCache` | on | Empties the cache, keeping the keys named in `except`. |
 | `FlushStorage` | on, empty | Deletes named directories per disk and recreates them. |
 | `FlushQueue` | on, empty | Clears named queues. |
-| `FlushTelescope` | off | Empties Telescope entries. |
+| `FlushTelescope` | off, and not in the published config | Empties Telescope entries. |
+
+## Turning on `FlushTelescope`
+
+It is the one cleaner the published `config/demo.php` does not list, so adding it
+is the whole of switching it on:
+
+```php
+'cleaners' => [
+    // ...
+    Cleaners\FlushTelescope::class => [],
+],
+```
+
+Left out rather than shipped-and-disabled because an application running
+Telescope on its demo may be doing so precisely to watch the demo, and deleting
+that on every reset is not a decision this package should make for you.
+
+Worth making yourself, though, if nobody is watching: Telescope records every
+request a stranger made, with their input, their headers and the queries those
+produced. Keeping it across a reset means the demo quietly accumulates a log of
+what visitors typed. The cleaner does nothing when Telescope is not installed,
+and nothing when it is installed but not migrated.
 
 ## Why two of them are empty by default
 

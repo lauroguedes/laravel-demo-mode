@@ -123,10 +123,39 @@ disagree with what the scheduler will actually do.
 ## Confirm the schedule is running
 
 The package registers the reset itself, so there is nothing to add to
-`routes/console.php`. Confirm your scheduler runs at all:
+`routes/console.php`.
 
 ```bash
 php artisan schedule:list
+```
+
+That proves the reset is **registered**. It does not prove anything runs it —
+"Next Due: 33 minutes from now" is arithmetic on the cron expression, and it
+reads exactly the same on a server with no cron at all. So does the banner's
+countdown, which comes from the same expression.
+
+What proves it is happening:
+
+```bash
+php artisan demo:status
+```
+
+```
+Resets .............................................. hourly
+Next reset ....................... 2026-09-26T10:00:00+00:00
+Last reset ....................... 2026-09-25T19:33:06+00:00
+```
+
+**Compare the last reset against the schedule.** A day-old timestamp under an
+hourly schedule means nothing is calling `schedule:run` — the demo has been
+promising a reset every hour and never doing one. `Last reset` is recorded by
+whatever actually performed a reset, so it cannot be produced by arithmetic.
+
+Locally, `php artisan schedule:work` is the loop. On a server it is the ordinary
+cron line, every minute, with Laravel deciding what is due:
+
+```cron
+* * * * * cd /srv/demo && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 A demo whose cron is not running is a demo that never resets while its banner

@@ -1,9 +1,30 @@
 # Upgrading
 
-## To 1.0
+## To 1.4 and 1.5
 
-First release. Nothing to upgrade from — but if you already have a hand-rolled
-demo mode, the rest of this page is for you.
+**`demo:install` asks questions now.** It asks which kind of visitor isolation to
+set up (1.4) and whether to write the `DemoSeeder` stub (1.5). An unattended run
+that does not say so will sit waiting for an answer.
+
+If a deploy step or a container build calls it, pass the answers:
+
+```bash
+php artisan demo:install --no-interaction
+php artisan demo:install --sandbox=scoped --without-seeder   # or answer each one
+```
+
+`--no-interaction` takes `shared` and writes the seeder, which is what the
+command did before it asked anything, so an existing script only needs the flag.
+
+**Nothing else changes.** Both middleware aliases — `demo.readonly` and
+`demo.sandbox` — are now registered on every installation rather than only on a
+demo, which fixes a `Target class [demo.sandbox] does not exist` on any
+deployment that followed the documentation and had `DEMO_MODE=false`. Nothing to
+do; a `bootstrap/app.php` that already names them simply stops failing.
+
+`demo:doctor` gained one check in 1.4: a warning when `sandbox.models` lists
+models while the driver is not `scoped`. It is a warning, so it cannot turn a
+passing audit into a failing one.
 
 ## To 1.3
 
@@ -56,6 +77,11 @@ Two things to know before you do:
 
 An Inertia application puts the component in its **root Blade view**, beside
 `@inertia`, rather than in a page component.
+
+## To 1.0
+
+First release. Nothing to upgrade from — but if you already have a hand-rolled
+demo mode, the rest of this page is for you.
 
 ## Migrating off a hand-rolled demo mode
 

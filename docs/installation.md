@@ -14,8 +14,8 @@ composer require lauroguedes/laravel-demo-mode
 php artisan demo:install
 ```
 
-`demo:install` publishes `config/demo.php`, writes `database/seeders/DemoSeeder.php`
-and appends the `DEMO_` keys to `.env.example`.
+`demo:install` publishes `config/demo.php`, appends the `DEMO_` keys to
+`.env.example`, and offers to write `database/seeders/DemoSeeder.php`.
 
 Everything it does is additive. It does not edit `.env`, and it does not set
 `DEMO_MODE=true`. Turning an installation into a public playground is something

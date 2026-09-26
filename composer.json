@@ -11,6 +11,12 @@
     ],
     "homepage": "https://github.com/lauroguedes/laravel-demo-mode",
     "license": "MIT",
+    "support": {
+        "issues": "https://github.com/lauroguedes/laravel-demo-mode/issues",
+        "source": "https://github.com/lauroguedes/laravel-demo-mode",
+        "docs": "https://github.com/lauroguedes/laravel-demo-mode/blob/main/docs/README.md",
+        "security": "https://github.com/lauroguedes/laravel-demo-mode/security/policy"
+    },
     "authors": [
         {
             "name": "Lauro Guedes",

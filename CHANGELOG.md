@@ -5,6 +5,40 @@ All notable changes to `laravel-demo-mode` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.5.1 - 2026-09-26
+
+A review of the whole package and its documentation ahead of publishing. No
+behaviour changed; everything here is something that said one thing while the
+code did another, or that could not be acted on as written.
+
+### Fixed
+
+- **The README described an installer that no longer exists.** It claimed the
+  command "writes a `DemoSeeder` stub" unconditionally and then, two paragraphs
+  later, that it asks whether to — and the sentence introducing the questions had
+  lost its noun in an earlier edit. Both command tables still described
+  `demo:install` as publishing "the config and the seeder stub".
+- **The quickstart's way of confirming the schedule runs did not confirm it.**
+  `schedule:list` proves the reset is registered; "Next Due: 33 minutes from now"
+  is arithmetic on the cron expression and reads identically on a server with no
+  cron at all — as does the banner's countdown. It now points at `demo:status`
+  and says to compare `Last reset` against the schedule, which is the one number
+  that cannot be produced without a reset having happened.
+- **`UPGRADE.md` had no section for 1.4 or 1.5**, which is where `demo:install`
+  started asking questions — an unattended run that does not pass
+  `--no-interaction` now waits for an answer. Its sections were also ordered 1.0,
+  1.3, 1.1; they run newest-first now.
+- **`FlushTelescope` was documented with no way to switch it on.** It is the one
+  cleaner the published config does not list, deliberately, and nothing said so
+  or showed the line to add.
+- **`PLAN.md` still said "plan approved, nothing implemented"** on a package that
+  had been shipping for three days. Marked historical, pointing at the README and
+  the changelog for what is actually true.
+
+### Added
+
+- `support` links in `composer.json` — issues, source, docs and the security
+  policy — so the Packagist page carries them.
 ## 1.5.0 - 2026-09-26
 
 ### Added

@@ -8,8 +8,11 @@ order the work happens in.
 Written in English because the repository is — README, docs, code comments and commit
 messages all are. The spec stays in pt-BR in Obsidian.
 
-**Status:** plan approved, nothing implemented.
-**Date:** 2026-09-22
+**Status:** historical. Everything below was built and shipped; this file is kept
+for the reasoning behind the decisions, not as a description of the package. What
+the package does now is in [README.md](README.md) and [docs/](docs/README.md),
+and what changed when is in [CHANGELOG.md](CHANGELOG.md).
+**Date:** 2026-09-22, superseded by the 1.0 release on 2026-09-23
 
 ---
 

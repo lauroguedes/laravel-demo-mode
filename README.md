@@ -24,16 +24,17 @@ composer require lauroguedes/laravel-demo-mode
 php artisan demo:install
 ```
 
-`demo:install` is additive: it publishes the config, writes a `DemoSeeder` stub,
-and appends the `DEMO_` keys to `.env.example`. It does not touch `.env` and it
-does not turn the demo on — that is an act you perform on the deployment you
-meant.
+`demo:install` is additive: it publishes the config, appends the `DEMO_` keys to
+`.env.example`, and offers to write a `DemoSeeder` stub. It does not touch `.env`
+and it does not turn the demo on — that is an act you perform on the deployment
+you meant.
 
-It asks two: whether every visitor sees the same data or each gets
+It asks two questions, because neither answer can be inferred from the project:
+whether every visitor sees the same data or each gets
 [their own corner of it](docs/sandbox.md), and whether to start a `DemoSeeder` or
 point the reset at a seeder you already have. Answer `shared` if you are not sure.
 `--sandbox=shared|scoped` and `--without-seeder` answer both for a script, and a
-non-interactive run takes `shared` and writes the seeder.
+run with nobody at the keyboard takes `shared` and writes the seeder.
 
 ## Making an installation a demo
 
@@ -107,7 +108,7 @@ and not a security boundary; see [docs/sandbox.md](docs/sandbox.md).
 
 | Command | What it does |
 |---|---|
-| `demo:install` | Publish the config and the seeder stub |
+| `demo:install` | Publish the config, and a seeder stub if you want one |
 | `demo:reset` | Rebuild the demonstration data. `--dry-run` prints the plan |
 | `demo:status` | What this installation currently is |
 | `demo:doctor` | Audit the configuration. Non-zero exit on anything dangerous |

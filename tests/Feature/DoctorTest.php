@@ -25,8 +25,21 @@ it('says an installation is not a demo before saying anything else', function ()
     expect(findings())->toBe(['demo-mode:warning']);
 });
 
+/**
+ * published() rather than demo(), and on a faked disk, for two reasons that both
+ * bit this test.
+ *
+ * A demo set up properly but never reset has nothing published, which is now a
+ * finding of its own — correctly, because that demo's login page is two empty
+ * boxes. "Set up properly" has to mean one that has actually run.
+ *
+ * And reading the real disk made the result depend on whether a stray
+ * demo-credentials.json was lying around in the testbench application. One was,
+ * left by a manual run, so this passed locally and only failed on CI — the same
+ * way a published config once shadowed the package's own for two days.
+ */
 it('finds nothing wrong with a demo that is set up properly', function (): void {
-    demo([
+    published([
         'demo.allowed_hosts' => ['demo.example.com'],
         'app.url' => 'https://demo.example.com',
         'demo.reset.strategies.migrate-fresh-seed.seeder' => Seeder::class,
